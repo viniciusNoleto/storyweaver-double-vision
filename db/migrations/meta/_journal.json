@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1787861653367,
+      "tag": "0000_famous_toad_men",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1787867370675,
+      "tag": "0001_add_table_zones",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787952000000,
+      "tag": "0002_add_mana_and_status_effects",
+      "breakpoints": true
+    }
+  ]
+}

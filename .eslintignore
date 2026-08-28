@@ -1,0 +1,8 @@
+dist
+node_modules
+public
+package-lock.json
+.next/**
+out/**
+build/**
+next-env.d.ts

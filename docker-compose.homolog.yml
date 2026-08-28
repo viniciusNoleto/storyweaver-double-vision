@@ -1,0 +1,42 @@
+services:
+  storyweaver-front:
+    container_name: storyweaver-front
+    user: node
+    restart: unless-stopped
+    tty: true
+    build:
+      dockerfile: ./configs/docker/node/Dockerfile.deploy
+    ports:
+      - ${APP_PORT:-80}:3000
+    networks:
+      - storyweaver-network
+    depends_on:
+      storyweaver-postgres:
+        condition: service_healthy
+
+  storyweaver-postgres:
+    container_name: storyweaver-postgres
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - storyweaver-postgres-data:/var/lib/postgresql/data
+    networks:
+      - storyweaver-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-storyweaver}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  storyweaver-network:
+    name: storyweaver-network
+    driver: bridge
+
+volumes:
+  storyweaver-postgres-data:
+    name: storyweaver-postgres-data
