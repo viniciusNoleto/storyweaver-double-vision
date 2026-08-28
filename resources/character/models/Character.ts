@@ -69,12 +69,6 @@ export interface ICharacterMaster extends ICharacterBase, ICharacterMana {
   origin_id: number | null;
   level: number;
   attributes: ICharacterAttributes | null;
-  // Resultado da etapa Magias do wizard — IDs de `spells`. Mestre-only,
-  // NUNCA em `ICharacterDisplay` — mesma regra de class_id/attributes acima.
-  known_spell_ids: number[];
-  // Item customizado digitado na etapa Itens do wizard. Mestre-only pelo
-  // mesmo motivo.
-  custom_items: string | null;
 }
 
 // Visão de Exibição — NUNCA inclua hp_current/hp_max aqui, nem em campos

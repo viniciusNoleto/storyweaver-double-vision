@@ -17,7 +17,8 @@ const ATTRIBUTE_OPTIONS = ATTRIBUTE_ORDER.map((attribute) => ({ value: attribute
 // em dois diferentes — decisão fixa do Mestre na hora de criar, sem
 // alternativas pro jogador escolher depois, diferente das 8 origens comuns
 // do livro), uma perícia concedida (texto livre — ferramenta, habilidade ou
-// conhecimento), itens/moedas iniciais em texto livre.
+// conhecimento). Itens/dinheiro inicial não são geridos pelo app (a pedido
+// do usuário) — ficam de fora do formulário.
 export function useCreateOriginLogicData({ onSuccess }: { onSuccess: (origin: IOrigin) => void }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -25,8 +26,6 @@ export function useCreateOriginLogicData({ onSuccess }: { onSuccess: (origin: IO
   const [attributeA, setAttributeA] = useState<string | null>(null);
   const [attributeB, setAttributeB] = useState<string | null>(null);
   const [grantedProficiency, setGrantedProficiency] = useState('');
-  const [startingItems, setStartingItems] = useState('');
-  const [startingMoney, setStartingMoney] = useState('');
 
   const createOriginMutation = useMutation({
     mutationFn: () => {
@@ -40,8 +39,6 @@ export function useCreateOriginLogicData({ onSuccess }: { onSuccess: (origin: IO
           description: description.trim(),
           attribute_bonuses: attributeBonuses,
           granted_proficiency: grantedProficiency.trim(),
-          starting_items: startingItems.trim(),
-          starting_money: startingMoney.trim(),
         },
       });
     },
@@ -66,8 +63,6 @@ export function useCreateOriginLogicData({ onSuccess }: { onSuccess: (origin: IO
     setAttributeA(null);
     setAttributeB(null);
     setGrantedProficiency('');
-    setStartingItems('');
-    setStartingMoney('');
   }
 
   return {
@@ -77,8 +72,6 @@ export function useCreateOriginLogicData({ onSuccess }: { onSuccess: (origin: IO
     attributeA, setAttributeA,
     attributeB, setAttributeB,
     grantedProficiency, setGrantedProficiency,
-    startingItems, setStartingItems,
-    startingMoney, setStartingMoney,
     createOriginMutation,
     createOriginReset,
   };
@@ -100,8 +93,6 @@ export function CreateOriginLogicComponent({
     attributeA, setAttributeA,
     attributeB, setAttributeB,
     grantedProficiency, setGrantedProficiency,
-    startingItems, setStartingItems,
-    startingMoney, setStartingMoney,
     createOriginMutation: {
       mutate: createOriginMutate,
       isPending: createOriginIsPending,
@@ -204,21 +195,6 @@ export function CreateOriginLogicComponent({
           required
           value={grantedProficiency}
           onChange={(event) => setGrantedProficiency(event.currentTarget.value)}
-        />
-
-        <Textarea
-          label="Itens iniciais"
-          placeholder="Combine com o Mestre..."
-          value={startingItems}
-          onChange={(event) => setStartingItems(event.currentTarget.value)}
-          rows={2}
-        />
-
-        <TextInput
-          label="Dinheiro inicial"
-          placeholder="Ex: 10 cg"
-          value={startingMoney}
-          onChange={(event) => setStartingMoney(event.currentTarget.value)}
         />
 
         <Group justify="flex-end" gap="sm">

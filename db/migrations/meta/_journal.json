@@ -64,6 +64,20 @@
       "when": 1787931397784,
       "tag": "0008_true_layla_miller",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787932398374,
+      "tag": "0009_fuzzy_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787932894546,
+      "tag": "0010_real_arachne",
+      "breakpoints": true
     }
   ]
 }

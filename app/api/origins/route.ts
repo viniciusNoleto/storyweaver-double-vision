@@ -31,8 +31,6 @@ export async function POST(request: Request) {
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     const description = typeof body.description === 'string' ? body.description.trim() : '';
     const grantedProficiency = typeof body.granted_proficiency === 'string' ? body.granted_proficiency.trim() : '';
-    const startingItems = typeof body.starting_items === 'string' ? body.starting_items.trim() : '';
-    const startingMoney = typeof body.starting_money === 'string' ? body.starting_money.trim() : '';
     const attributeBonuses: IAttributeBonus[] = Array.isArray(body.attribute_bonuses) ? body.attribute_bonuses : [];
 
     if (!name || !grantedProficiency || attributeBonuses.length === 0) {
@@ -45,8 +43,6 @@ export async function POST(request: Request) {
       attribute_bonus_options: [attributeBonuses],
       granted_proficiency: grantedProficiency,
       proficiency_choice: null,
-      starting_items: startingItems,
-      starting_money: startingMoney,
       is_custom: true,
     }).returning();
 

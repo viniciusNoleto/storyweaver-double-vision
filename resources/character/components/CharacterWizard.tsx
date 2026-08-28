@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ActionIcon, Button, Card, Group, Loader, Modal, Select, SimpleGrid, Stack, Text, TextInput, Checkbox, Radio, Divider } from '@mantine/core';
+import { ActionIcon, Button, Card, Group, Loader, Modal, SimpleGrid, Stack, Text, TextInput, Checkbox, Radio, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Icon } from '@iconify/react';
 import { getClassesService, GET_CLASSES_KEY } from '../services/getClasses';
 import { getSpeciesService, GET_SPECIES_KEY } from '../services/getSpecies';
 import { getOriginsService, GET_ORIGINS_KEY } from '../services/getOrigins';
-import { getToolsService, GET_TOOLS_KEY } from '../services/getTools';
 import { createCharacterService } from '../services/createCharacter';
 import { calculateAttributes } from '../models/calculateAttributes';
 import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL } from '../enums/Attribute';
@@ -123,14 +122,6 @@ function renderDetailContent(target: DetailTarget) {
         {item.description}
       </Text>
 
-      <Text size="sm">
-        {`Itens iniciais: ${item.starting_items}`}
-      </Text>
-
-      <Text size="sm">
-        {`Dinheiro inicial: ${item.starting_money}`}
-      </Text>
-
       <Divider
         label="Bônus de atributo (escolha um na hora de selecionar)"
         labelPosition="left"
@@ -171,6 +162,10 @@ function classHasChoices(item: IClass): boolean {
   return !!item.skill_proficiency_choice?.count || !!item.knowledge_proficiency_choice?.count || !!item.equipment_choice;
 }
 
+// Ícone de fallback pra Origens customizadas (is_custom: true) e qualquer
+// registro sem `icon` preenchido — nunca deixa um card sem ícone.
+const FALLBACK_ICON = 'lucide:sparkles';
+
 // Wizard de criação de Personagem guiado pelas regras de Contos e Cantos de
 // Vilgard (ver docs/superpowers/specs/2026-08-28-character-creation-wizard-design.md).
 // Motor genérico: nenhuma etapa conhece o nome de nenhuma classe/espécie/
@@ -195,21 +190,16 @@ export function CharacterWizard({
   const [originId, setOriginId] = useState<number | null>(null);
   const [originBonusIndex, setOriginBonusIndex] = useState<number | null>(null);
   const [originProficiency, setOriginProficiency] = useState<string | null>(null);
-  const [toolChoiceId, setToolChoiceId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [detailTarget, setDetailTarget] = useState<DetailTarget | null>(null);
   const [creatingOrigin, setCreatingOrigin] = useState(false);
-  const [toolsCatalogOpen, setToolsCatalogOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
   const { data: speciesData, isLoading: speciesLoading } = useQuery({ queryKey: GET_SPECIES_KEY, queryFn: getSpeciesService, enabled: opened });
   const { data: classesData, isLoading: classesLoading } = useQuery({ queryKey: GET_CLASSES_KEY, queryFn: getClassesService, enabled: opened });
   const { data: originsData, isLoading: originsLoading } = useQuery({ queryKey: GET_ORIGINS_KEY, queryFn: getOriginsService, enabled: opened });
-  const { data: toolsData } = useQuery({ queryKey: GET_TOOLS_KEY, queryFn: getToolsService, enabled: opened });
-
-  const toolsList = toolsData?.data ?? [];
 
   const speciesList = speciesData?.data ?? [];
   const classesList = classesData?.data ?? [];
@@ -229,7 +219,6 @@ export function CharacterWizard({
     setOriginId(null);
     setOriginBonusIndex(null);
     setOriginProficiency(null);
-    setToolChoiceId(null);
     setName('');
     setImageUrl('');
   }
@@ -298,7 +287,6 @@ export function CharacterWizard({
     setOriginId(item.id);
     setOriginBonusIndex(0);
     setOriginProficiency(item.proficiency_choice?.options[0] ?? null);
-    setToolChoiceId(item.tool_choice?.tool_ids[0] ?? null);
   }
 
   const createOriginLogicData = useCreateOriginLogicData({
@@ -319,7 +307,6 @@ export function CharacterWizard({
     if (!selectedOrigin) return false;
     if (originBonusIndex === null) return false;
     if (selectedOrigin.proficiency_choice && !originProficiency) return false;
-    if (selectedOrigin.tool_choice && toolChoiceId === null) return false;
 
     return true;
   }
@@ -392,43 +379,6 @@ export function CharacterWizard({
       />
 
       <Modal
-        opened={toolsCatalogOpen}
-        onClose={() => setToolsCatalogOpen(false)}
-        title="Ferramentas"
-        zIndex={1000}
-        centered
-      >
-        <Stack gap="sm">
-          {toolsList.map((tool) => (
-            <div key={tool.id}>
-              <Group
-                justify="space-between"
-                wrap="nowrap"
-              >
-                <Text fw={600}>
-                  {tool.name}
-                </Text>
-
-                <Text
-                  size="xs"
-                  c="dimmed"
-                >
-                  {tool.price}
-                </Text>
-              </Group>
-
-              <Text
-                size="sm"
-                c="dimmed"
-              >
-                {tool.description}
-              </Text>
-            </div>
-          ))}
-        </Stack>
-      </Modal>
-
-      <Modal
         opened={opened}
         onClose={cancel}
       title="Criar Personagem"
@@ -462,9 +412,20 @@ export function CharacterWizard({
                   justify="space-between"
                   wrap="nowrap"
                 >
-                  <Text fw={600}>
-                    {item.name}
-                  </Text>
+                  <Group
+                    gap="xs"
+                    wrap="nowrap"
+                  >
+                    <Icon
+                      icon={item.icon ?? FALLBACK_ICON}
+                      width={20}
+                      height={20}
+                    />
+
+                    <Text fw={600}>
+                      {item.name}
+                    </Text>
+                  </Group>
 
                   <ActionIcon
                     variant="subtle"
@@ -504,9 +465,20 @@ export function CharacterWizard({
                   justify="space-between"
                   wrap="nowrap"
                 >
-                  <Text fw={600}>
-                    {item.name}
-                  </Text>
+                  <Group
+                    gap="xs"
+                    wrap="nowrap"
+                  >
+                    <Icon
+                      icon={item.icon ?? FALLBACK_ICON}
+                      width={20}
+                      height={20}
+                    />
+
+                    <Text fw={600}>
+                      {item.name}
+                    </Text>
+                  </Group>
 
                   <ActionIcon
                     variant="subtle"
@@ -667,9 +639,20 @@ export function CharacterWizard({
                       justify="space-between"
                       wrap="nowrap"
                     >
-                      <Text fw={600}>
-                        {item.name}
-                      </Text>
+                      <Group
+                        gap="xs"
+                        wrap="nowrap"
+                      >
+                        <Icon
+                          icon={item.icon ?? FALLBACK_ICON}
+                          width={20}
+                          height={20}
+                        />
+
+                        <Text fw={600}>
+                          {item.name}
+                        </Text>
+                      </Group>
 
                       <ActionIcon
                         variant="subtle"
@@ -706,17 +689,6 @@ export function CharacterWizard({
                   </Group>
                 </Card>
               </SimpleGrid>
-
-              <Button
-                variant="subtle"
-                size="xs"
-                leftSection={(
-                  <Icon icon="lucide:hammer" />
-                )}
-                onClick={() => setToolsCatalogOpen(true)}
-              >
-                Ver Ferramentas
-              </Button>
             </>
           ) : (
             <>
@@ -762,19 +734,6 @@ export function CharacterWizard({
                     ))}
                   </Stack>
                 </Radio.Group>
-              ) : null}
-
-              {selectedOrigin.tool_choice ? (
-                <Select
-                  label="Ferramenta"
-                  data={selectedOrigin.tool_choice.tool_ids.map((toolId) => {
-                    const tool = toolsList.find((item) => item.id === toolId);
-
-                    return { value: String(toolId), label: tool ? `${tool.name} (${tool.price})` : String(toolId) };
-                  })}
-                  value={toolChoiceId === null ? null : String(toolChoiceId)}
-                  onChange={(value) => setToolChoiceId(value ? Number(value) : null)}
-                />
               ) : null}
             </>
           )}
@@ -824,15 +783,6 @@ export function CharacterWizard({
           <Text size="sm">
             {`${selectedSpecies.name} · ${selectedClass.name} · ${selectedOrigin.name}`}
           </Text>
-
-          {selectedOrigin.tool_choice && toolChoiceId !== null ? (
-            <Text
-              size="sm"
-              c="dimmed"
-            >
-              {`Ferramenta: ${toolsList.find((tool) => tool.id === toolChoiceId)?.name ?? '—'}`}
-            </Text>
-          ) : null}
 
           <SimpleGrid cols={4}>
             {ATTRIBUTE_ORDER.map((attribute) => (

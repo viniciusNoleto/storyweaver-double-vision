@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { tables } from './tables';
 import { tableZones } from './table_zones';
 
@@ -47,14 +47,6 @@ export const characters = pgTable('characters', {
   level: integer('level').notNull().default(1),
   // Record<EAttribute, number> | null — ver resources/character/enums/Attribute.ts
   attributes: jsonb('attributes'),
-  // Resultado da etapa Magias do wizard — array de `spell_id` (int[] via
-  // jsonb, mesmo padrão de `status_effects`). Mestre-only, NUNCA em
-  // `ICharacterDisplay` — mesma regra de `class_id`/`attributes` acima. `[]`
-  // para personagens de classes não-conjuradoras e para NPCs/formulário simples.
-  known_spell_ids: jsonb('known_spell_ids').notNull().default([]),
-  // Texto livre digitado na etapa Itens do wizard ("item customizado").
-  // Mestre-only pelo mesmo motivo.
-  custom_items: text('custom_items'),
   created_at: timestamp('created_at'),
   updated_at: timestamp('updated_at'),
 });

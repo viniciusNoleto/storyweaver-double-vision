@@ -7,8 +7,6 @@ export type CreateOriginServicePayload = {
   description: string;
   attribute_bonuses: IAttributeBonus[];
   granted_proficiency: string;
-  starting_items: string;
-  starting_money: string;
 };
 
 export function createOriginService({ body }: PayloadBody<CreateOriginServicePayload>) {

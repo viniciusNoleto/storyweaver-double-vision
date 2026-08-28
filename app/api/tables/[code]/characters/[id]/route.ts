@@ -28,8 +28,6 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     origin_id: c.origin_id,
     level: c.level,
     attributes: c.attributes as ICharacterAttributes | null,
-    known_spell_ids: c.known_spell_ids as number[],
-    custom_items: c.custom_items,
     created_at: c.created_at ? c.created_at.toISOString() : null,
     updated_at: c.updated_at ? c.updated_at.toISOString() : null,
   };
@@ -124,8 +122,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     if (typeof body.extra_hp === 'number') updates.extra_hp = Math.max(body.extra_hp, 0);
     if (Array.isArray(body.status_effects)) updates.status_effects = sanitizeStatusEffects(body.status_effects);
     if (typeof body.visible === 'boolean') updates.visible = body.visible;
-    if (Array.isArray(body.known_spell_ids)) updates.known_spell_ids = body.known_spell_ids.filter((id: unknown) => typeof id === 'number');
-    if ('custom_items' in body) updates.custom_items = typeof body.custom_items === 'string' && body.custom_items.trim() ? body.custom_items.trim() : null;
     if (typeof body.has_mana === 'boolean') updates.has_mana = body.has_mana;
 
     // `mana_current`/`mana_max` sempre clampados juntos: se qualquer um dos

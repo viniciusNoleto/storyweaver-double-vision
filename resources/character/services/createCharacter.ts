@@ -27,8 +27,6 @@ export type CreateCharacterServicePayload = {
   origin_id?: number | null;
   level?: number;
   attributes?: import('./../models/RulesContent').ICharacterAttributes | null;
-  known_spell_ids?: number[];
-  custom_items?: string | null;
 };
 
 // Só o Mestre pode chamar (a rota valida via cookie — ver
