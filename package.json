@@ -10,7 +10,8 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "db:seed:rules": "tsx db/seed/seedRules.ts"
   },
   "dependencies": {
     "@mantine/core": "^9.1.1",
