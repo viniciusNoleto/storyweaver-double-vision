@@ -1,12 +1,36 @@
 import { db } from '@/libs/db';
 import { tables, tablePublicColumns, characters, tableZones } from '@/db/schema';
 import { getCurrentMaster } from '@/libs/tableAuth';
+import { publish } from '@/libs/realtime';
 import { healthColor } from '@/resources/character/models/HealthColor';
 import type { ICharacterDisplay, ICharacterMaster } from '@/resources/character/models/Character';
+import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
 import type { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import type { ITableZone } from '@/resources/table/models/TableZone';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
+// Resolve a Mesa pelo `code` e se a requisição atual pertence ao Mestre dela —
+// mesmo padrão de `resolveTableAndMaster` em
+// `app/api/tables/[code]/characters/[id]/route.ts`. Usado por PATCH e DELETE
+// abaixo, que exigem `isMaster === true`.
+async function resolveTableAndMaster(tableCode: string) {
+  const [table] = await db.select({ id: tables.id }).from(tables).where(eq(tables.code, tableCode));
+
+  if (!table) return { table: null, isMaster: false };
+
+  const isMaster = await getCurrentMaster(tableCode, table.id);
+
+  return { table, isMaster };
+}
+
+function tableNotFound() {
+  return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa não encontrada.', 'es-mx': 'Mesa no encontrada.', 'en-us': 'Table not found.' }, data: null }, { status: 404 });
+}
+
+function unauthorized() {
+  return NextResponse.json({ success: false, message: { 'pt-br': 'Apenas o Mestre pode fazer isso.', 'es-mx': 'Solo el Máster puede hacer esto.', 'en-us': 'Only the Master can do this.' }, data: null }, { status: 401 });
+}
 
 // Única rota de snapshot da Mesa (ver `.claude/rules/table-concept.md` seção 3,
 // "Redação de privacidade — uma única fonte, dois payloads"). Resolve o papel
@@ -68,6 +92,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
         has_mana: c.has_mana,
         mana_current: c.mana_current,
         mana_max: c.mana_max,
+        class_id: c.class_id,
+        species_id: c.species_id,
+        origin_id: c.origin_id,
+        level: c.level,
+        attributes: c.attributes as ICharacterAttributes | null,
         created_at: c.created_at ? c.created_at.toISOString() : null,
         updated_at: c.updated_at ? c.updated_at.toISOString() : null,
       }))
@@ -108,5 +137,75 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     console.error(e);
 
     return NextResponse.json({ success: false, message: { 'pt-br': 'Erro ao buscar a mesa.', 'es-mx': 'Error al buscar la mesa.', 'en-us': 'Error fetching table.' }, data: null }, { status: 500 });
+  }
+}
+
+// Renomeia a Mesa (`name`). Só o Mestre pode. Usado pela tela "Gerenciar
+// Mesas" (ver `.claude/rules/table-concept.md`).
+export async function PATCH(request: Request, { params }: { params: Promise<{ code: string }> }) {
+  try {
+    const { code } = await params;
+    const tableCode = code.toUpperCase();
+
+    const { table, isMaster } = await resolveTableAndMaster(tableCode);
+
+    if (!table) return tableNotFound();
+    if (!isMaster) return unauthorized();
+
+    const body = await request.json().catch(() => ({}));
+
+    if (typeof body.name !== 'string' || !body.name.trim()) {
+      return NextResponse.json({ success: false, message: { 'pt-br': 'Nome inválido.', 'es-mx': 'Nombre inválido.', 'en-us': 'Invalid name.' }, data: null }, { status: 422 });
+    }
+
+    const [updated] = await db
+      .update(tables)
+      .set({ name: body.name.trim() })
+      .where(eq(tables.id, table.id))
+      .returning(tablePublicColumns);
+
+    return NextResponse.json({
+      success: true,
+      message: { 'pt-br': 'Mesa renomeada com sucesso.', 'es-mx': 'Mesa renombrada con éxito.', 'en-us': 'Table renamed successfully.' },
+      data: updated,
+    });
+  } catch (e) {
+    console.error(e);
+
+    return NextResponse.json({ success: false, message: { 'pt-br': 'Erro ao renomear a mesa.', 'es-mx': 'Error al renombrar la mesa.', 'en-us': 'Error renaming table.' }, data: null }, { status: 500 });
+  }
+}
+
+// Apaga a Mesa e tudo que pertence a ela (personagens, divisões). Só o
+// Mestre pode. Sem `ON DELETE CASCADE` no schema (ver `db/schema/`), então a
+// ordem de exclusão respeita as foreign keys — personagens e zonas antes da
+// Mesa — dentro de uma única transação.
+export async function DELETE(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+  try {
+    const { code } = await params;
+    const tableCode = code.toUpperCase();
+
+    const { table, isMaster } = await resolveTableAndMaster(tableCode);
+
+    if (!table) return tableNotFound();
+    if (!isMaster) return unauthorized();
+
+    await db.transaction(async (tx) => {
+      await tx.delete(characters).where(eq(characters.table_id, table.id));
+      await tx.delete(tableZones).where(eq(tableZones.table_id, table.id));
+      await tx.delete(tables).where(eq(tables.id, table.id));
+    });
+
+    publish(`table:${tableCode}`);
+
+    return NextResponse.json({
+      success: true,
+      message: { 'pt-br': 'Mesa excluída com sucesso.', 'es-mx': 'Mesa eliminada con éxito.', 'en-us': 'Table deleted successfully.' },
+      data: null,
+    });
+  } catch (e) {
+    console.error(e);
+
+    return NextResponse.json({ success: false, message: { 'pt-br': 'Erro ao excluir a mesa.', 'es-mx': 'Error al eliminar la mesa.', 'en-us': 'Error deleting table.' }, data: null }, { status: 500 });
   }
 }
