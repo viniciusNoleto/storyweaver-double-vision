@@ -425,6 +425,7 @@ export default function MestrePage({
 
       <UpdateCharacterLogicComponent
         logicData={updateCharacterLogicData}
+        character={editingCharacter}
         opened={!!editingCharacter}
         onCancel={() => setEditingCharacter(null)}
         onDelete={openDeleteFromEdit}

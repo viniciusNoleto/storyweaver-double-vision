@@ -10,6 +10,7 @@ import {
   characterFormStateToPayload,
   ICharacterFormState,
 } from '../components/CharacterEditPanel';
+import type { ICharacterMaster } from '../models/Character';
 
 // Ver `.claude/rules/resources-logic.md` — Padrão 2 (ação com formulário),
 // variante "update": o hook recebe `editingCharacterId` (não o registro
@@ -61,11 +62,13 @@ export function useUpdateCharacterLogicData({
 
 export function UpdateCharacterLogicComponent({
   logicData,
+  character,
   opened,
   onCancel,
   onDelete,
 }: {
   logicData: ReturnType<typeof useUpdateCharacterLogicData>;
+  character: ICharacterMaster | null;
   opened: boolean;
   onCancel: () => void;
   onDelete?: () => void;
@@ -100,6 +103,10 @@ export function UpdateCharacterLogicComponent({
       onDelete={onDelete}
       isSubmitting={updateCharacterIsPending}
       submitLabel="Salvar"
+      classId={character?.class_id ?? null}
+      speciesId={character?.species_id ?? null}
+      originId={character?.origin_id ?? null}
+      attributes={character?.attributes ?? null}
     />
   );
 }

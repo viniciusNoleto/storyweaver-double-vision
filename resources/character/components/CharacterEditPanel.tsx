@@ -1,11 +1,18 @@
 'use client';
 
-import { Avatar, Button, Chip, Divider, Group, NumberInput, Modal, Stack, Switch, TextInput } from '@mantine/core';
+import { Button, Chip, Divider, Group, NumberInput, Modal, SimpleGrid, Stack, Switch, Text, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react';
+import { useQuery } from '@tanstack/react-query';
 import { EStatusEffect } from '../enums/StatusEffect';
 import { STATUS_EFFECT_VISUAL } from '../models/StatusEffectVisual';
+import { ImageUploadInput } from './ImageUploadInput';
+import { getClassesService, GET_CLASSES_KEY } from '../services/getClasses';
+import { getSpeciesService, GET_SPECIES_KEY } from '../services/getSpecies';
+import { getOriginsService, GET_ORIGINS_KEY } from '../services/getOrigins';
+import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL } from '../enums/Attribute';
 import type { ICharacterMaster } from '../models/Character';
 import type { CreateCharacterServicePayload } from '../services/createCharacter';
+import type { ICharacterAttributes } from '../models/RulesContent';
 
 // Conjunto fechado dos 4 estados fixos (ver `enums/StatusEffect.ts`) — usado
 // para desenhar um `Chip` por estado, sempre na mesma ordem.
@@ -85,6 +92,65 @@ function toNumber(value: number | string): number {
   return typeof value === 'number' ? value : Number(value) || 0;
 }
 
+// Resumo read-only da "ficha de regras" (espécie/classe/origem/atributos/
+// recursos da classe) — só aparece quando o personagem foi criado pelo
+// wizard (`class_id` presente). Personagens antigos/NPCs não têm esses
+// campos preenchidos, então a seção inteira fica ausente (ver `CharacterEditPanel`
+// abaixo, que só renderiza este componente quando `classId` é truthy).
+function CharacterRulesSummary({
+  classId,
+  speciesId,
+  originId,
+  attributes,
+}: {
+  classId: number;
+  speciesId: number | null;
+  originId: number | null;
+  attributes: ICharacterAttributes | null;
+}) {
+  const { data: classesData } = useQuery({ queryKey: GET_CLASSES_KEY, queryFn: getClassesService });
+  const { data: speciesData } = useQuery({ queryKey: GET_SPECIES_KEY, queryFn: getSpeciesService });
+  const { data: originsData } = useQuery({ queryKey: GET_ORIGINS_KEY, queryFn: getOriginsService });
+
+  const classItem = classesData?.data.find((item) => item.id === classId) ?? null;
+  const speciesItem = speciesData?.data.find((item) => item.id === speciesId) ?? null;
+  const originItem = originsData?.data.find((item) => item.id === originId) ?? null;
+
+  return (
+    <Stack gap="sm">
+      <Text size="sm">
+        {`${speciesItem?.name ?? '—'} · ${classItem?.name ?? '—'} · ${originItem?.name ?? '—'}`}
+      </Text>
+
+      {attributes ? (
+        <SimpleGrid cols={4}>
+          {ATTRIBUTE_ORDER.map((attribute) => (
+            <div key={attribute}>
+              <Text size="xs" c="dimmed">
+                {ATTRIBUTE_LABEL[attribute]}
+              </Text>
+
+              <Text fw={700}>
+                {attributes[attribute] >= 0 ? `+${attributes[attribute]}` : attributes[attribute]}
+              </Text>
+            </div>
+          ))}
+        </SimpleGrid>
+      ) : null}
+
+      {classItem && classItem.extra_resources.length > 0 ? (
+        <Stack gap={4}>
+          {classItem.extra_resources.map((resource) => (
+            <Text key={resource.label} size="sm" c="dimmed">
+              {`${resource.label}: ${resource.value}`}
+            </Text>
+          ))}
+        </Stack>
+      ) : null}
+    </Stack>
+  );
+}
+
 type CharacterEditPanelProps = {
   opened: boolean;
   title: string;
@@ -95,6 +161,10 @@ type CharacterEditPanelProps = {
   onDelete?: () => void;
   isSubmitting: boolean;
   submitLabel: string;
+  classId?: number | null;
+  speciesId?: number | null;
+  originId?: number | null;
+  attributes?: ICharacterAttributes | null;
 };
 
 export function CharacterEditPanel({
@@ -107,6 +177,10 @@ export function CharacterEditPanel({
   onDelete,
   isSubmitting,
   submitLabel,
+  classId,
+  speciesId,
+  originId,
+  attributes,
 }: CharacterEditPanelProps) {
   function updateField<K extends keyof ICharacterFormState>(key: K, value: ICharacterFormState[K]) {
     onChange({ ...state, [key]: value });
@@ -121,37 +195,17 @@ export function CharacterEditPanel({
       centered
     >
       <Stack gap="md">
-        <Group
-          align="flex-end"
-          gap="sm"
-        >
-          <TextInput
-            label="Nome"
-            placeholder="Ex: Kaelen, o Guardião"
-            required
-            value={state.name}
-            onChange={(event) => updateField('name', event.currentTarget.value)}
-            className="flex-1"
-          />
-
-          <Avatar
-            src={state.image_url.trim() || null}
-            size={48}
-            radius="xl"
-          >
-            <Icon
-              icon="lucide:user"
-              width={24}
-              height={24}
-            />
-          </Avatar>
-        </Group>
-
         <TextInput
-          label="URL da imagem"
-          placeholder="https://..."
+          label="Nome"
+          placeholder="Ex: Kaelen, o Guardião"
+          required
+          value={state.name}
+          onChange={(event) => updateField('name', event.currentTarget.value)}
+        />
+
+        <ImageUploadInput
           value={state.image_url}
-          onChange={(event) => updateField('image_url', event.currentTarget.value)}
+          onChange={(url) => updateField('image_url', url)}
         />
 
         <Group grow>
@@ -251,6 +305,19 @@ export function CharacterEditPanel({
             />
           </Group>
         )}
+
+        {classId ? (
+          <>
+            <Divider label="Regras (Contos e Cantos de Vilgard)" labelPosition="left" />
+
+            <CharacterRulesSummary
+              classId={classId}
+              speciesId={speciesId ?? null}
+              originId={originId ?? null}
+              attributes={attributes ?? null}
+            />
+          </>
+        ) : null}
 
         <Group justify="space-between" mt="sm">
           <div>
