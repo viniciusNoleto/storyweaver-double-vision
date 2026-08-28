@@ -3,7 +3,7 @@
 import { use, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { ActionIcon, Button, Group, Loader, Modal, Text } from '@mantine/core';
+import { ActionIcon, Button, Loader, Modal, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Icon } from '@iconify/react';
 import { useTableStream, UseTableStreamCharacterAction } from '@/resources/table/hooks/useTableStream';
@@ -15,10 +15,14 @@ import { TableBoard } from '@/resources/character/components/TableBoard';
 import { MasterToken, MasterTokenPulse } from '@/resources/character/components/MasterToken';
 import { CharacterActionsPanel, useApplyCharacterActionLogicData } from '@/resources/character/components/CharacterActionsPanel';
 import { characterToFormState } from '@/resources/character/components/CharacterEditPanel';
-import { useCreateCharacterLogicData, CreateCharacterLogicComponent } from '@/resources/character/logics/CreateCharacter';
 import { useCreateNpcLogicData, CreateNpcLogicComponent } from '@/resources/character/logics/CreateNpc';
 import { useUpdateCharacterLogicData, UpdateCharacterLogicComponent } from '@/resources/character/logics/UpdateCharacter';
 import { useDeleteCharacterLogicData, DeleteCharacterLogicComponent } from '@/resources/character/logics/DeleteCharacter';
+import { useSaveCharacterTemplateLogicData, SaveCharacterTemplatePrompt, SaveCharacterTemplateCandidate } from '@/resources/character/logics/SaveCharacterTemplate';
+import { AddCharacterMenu } from '@/resources/character/components/AddCharacterMenu';
+import { CharacterTemplatePicker } from '@/resources/character/components/CharacterTemplatePicker';
+import { CharacterWizard } from '@/resources/character/components/CharacterWizard';
+import { ECharacterKind } from '@/resources/character/enums/CharacterKind';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 
 // Máximo de divisões por Mesa (mesmo teto de `MAX_ZONES_PER_TABLE` no
@@ -99,27 +103,37 @@ export default function MestrePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const [creating, setCreating] = useState(false);
   const [creatingNpc, setCreatingNpc] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<ICharacterMaster | null>(null);
   const [deletingCharacter, setDeletingCharacter] = useState<ICharacterMaster | null>(null);
   const [actionsCharacterId, setActionsCharacterId] = useState<number | null>(null);
   const [deletingZoneId, setDeletingZoneId] = useState<number | null>(null);
+  const [templatePickerKind, setTemplatePickerKind] = useState<ECharacterKind | null>(null);
+  const [saveTemplateCandidate, setSaveTemplateCandidate] = useState<SaveCharacterTemplateCandidate | null>(null);
+  const [wizardOpened, setWizardOpened] = useState(false);
 
-  const createCharacterLogicData = useCreateCharacterLogicData({
-    code,
-    onSuccess: () => {
-      createCharacterLogicData.createCharacterReset();
-      setCreating(false);
-    },
-  });
+  function offerSaveTemplate(character: Pick<ICharacterMaster, 'name' | 'image_url' | 'hp_max' | 'has_mana' | 'mana_max'>, kind: ECharacterKind) {
+    setSaveTemplateCandidate({
+      kind,
+      name: character.name,
+      image_url: character.image_url,
+      hp_max: character.hp_max,
+      has_mana: character.has_mana,
+      mana_max: character.mana_max,
+    });
+  }
 
   const createNpcLogicData = useCreateNpcLogicData({
     code,
-    onSuccess: () => {
+    onSuccess: (character) => {
       createNpcLogicData.createNpcReset();
       setCreatingNpc(false);
+      offerSaveTemplate(character, ECharacterKind.NPC);
     },
+  });
+
+  const saveCharacterTemplateLogicData = useSaveCharacterTemplateLogicData({
+    onDone: () => setSaveTemplateCandidate(null),
   });
 
   const updateCharacterLogicData = useUpdateCharacterLogicData({
@@ -184,11 +198,6 @@ export default function MestrePage({
       });
     },
   });
-
-  function openCreate() {
-    createCharacterLogicData.createCharacterReset();
-    setCreating(true);
-  }
 
   function openCreateNpc() {
     createNpcLogicData.createNpcReset();
@@ -305,28 +314,10 @@ export default function MestrePage({
           </Text>
         </div>
 
-        <Group gap="sm">
-          <Button
-            variant="outline"
-            leftSection={(
-              <Icon icon="lucide:ghost" />
-            )}
-            onClick={openCreateNpc}
-            className="uppercase tracking-[0.06em]"
-          >
-            Novo NPC
-          </Button>
-
-          <Button
-            leftSection={(
-              <Icon icon="lucide:plus" />
-            )}
-            onClick={openCreate}
-            className="uppercase tracking-[0.06em]"
-          >
-            Novo personagem
-          </Button>
-        </Group>
+        <AddCharacterMenu
+          onCreateNew={(kind) => (kind === ECharacterKind.NPC ? openCreateNpc() : setWizardOpened(true))}
+          onUseSaved={(kind) => setTemplatePickerKind(kind)}
+        />
       </header>
 
       <div className="relative flex flex-1 bg-board p-3">
@@ -397,16 +388,39 @@ export default function MestrePage({
         onEditFull={openEditFromActions}
       />
 
-      <CreateCharacterLogicComponent
-        logicData={createCharacterLogicData}
-        opened={creating}
-        onCancel={() => setCreating(false)}
+      <CharacterWizard
+        code={code}
+        opened={wizardOpened}
+        onCancel={() => setWizardOpened(false)}
+        onCreated={(character) => {
+          setWizardOpened(false);
+          offerSaveTemplate(character, ECharacterKind.CHARACTER);
+        }}
       />
 
       <CreateNpcLogicComponent
         logicData={createNpcLogicData}
         opened={creatingNpc}
         onCancel={() => setCreatingNpc(false)}
+      />
+
+      {templatePickerKind ? (
+        <CharacterTemplatePicker
+          code={code}
+          kind={templatePickerKind}
+          opened
+          onCancel={() => setTemplatePickerKind(null)}
+          onCreated={() => {
+            setTemplatePickerKind(null);
+            refetch();
+          }}
+        />
+      ) : null}
+
+      <SaveCharacterTemplatePrompt
+        logicData={saveCharacterTemplateLogicData}
+        candidate={saveTemplateCandidate}
+        onSkip={() => setSaveTemplateCandidate(null)}
       />
 
       <UpdateCharacterLogicComponent
