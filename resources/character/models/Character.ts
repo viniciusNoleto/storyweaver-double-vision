@@ -1,4 +1,5 @@
 import type { EStatusEffect } from '../enums/StatusEffect';
+import type { ICharacterAttributes } from './RulesContent';
 
 // Ver `.claude/rules/table-concept.md` seção 3 ("Redação de privacidade") e
 // seção 6 (decisão registrada) para o porquê de existirem DOIS formatos.
@@ -63,6 +64,11 @@ export interface ICharacterMaster extends ICharacterBase, ICharacterMana {
   // (já embutido) no `hp_color`/`is_defeated` calculados no servidor.
   extra_hp: number;
   visible: boolean;
+  class_id: number | null;
+  species_id: number | null;
+  origin_id: number | null;
+  level: number;
+  attributes: ICharacterAttributes | null;
 }
 
 // Visão de Exibição — NUNCA inclua hp_current/hp_max aqui, nem em campos
