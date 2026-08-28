@@ -9,6 +9,11 @@ export const classes = pgTable('classes', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description').notNull(),
+  // Ícone Iconify (ex: "lucide:axe") — nullable: origens customizadas do
+  // usuário (`is_custom: true` em origins) ou dados antigos ficam sem ícone,
+  // a UI usa um fallback (ver Task 5). Ver
+  // docs/superpowers/specs/2026-08-28-wizard-spells-and-redesign-design.md.
+  icon: varchar('icon', { length: 60 }),
   // string[] — 1 ou 2 atributos primários (ex: Caçador tem 2: mágico e físico)
   primary_attributes: jsonb('primary_attributes').notNull(),
   // { attribute: string, amount: number }[]

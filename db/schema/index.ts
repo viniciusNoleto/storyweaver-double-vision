@@ -6,3 +6,5 @@ export * from './classes';
 export * from './species';
 export * from './origins';
 export * from './tools';
+export * from './spells';
+export * from './classSpells';

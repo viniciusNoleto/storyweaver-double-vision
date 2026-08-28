@@ -4,6 +4,11 @@ export const origins = pgTable('origins', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
   description: text('description').notNull(),
+  // Ícone Iconify (ex: "lucide:axe") — nullable: origens customizadas do
+  // usuário (`is_custom: true` em origins) ou dados antigos ficam sem ícone,
+  // a UI usa um fallback (ver Task 5). Ver
+  // docs/superpowers/specs/2026-08-28-wizard-spells-and-redesign-design.md.
+  icon: varchar('icon', { length: 60 }),
   // { attribute: string, amount: number }[][] — lista de alternativas; o
   // jogador escolhe UMA linha inteira (ex: [[{Destreza,2}], [{Destreza,1},{Inteligência,1}]])
   attribute_bonus_options: jsonb('attribute_bonus_options').notNull(),

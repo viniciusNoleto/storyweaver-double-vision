@@ -57,6 +57,13 @@
       "when": 1787929474841,
       "tag": "0007_pale_glorian",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787931397784,
+      "tag": "0008_true_layla_miller",
+      "breakpoints": true
     }
   ]
 }
