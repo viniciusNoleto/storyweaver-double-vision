@@ -10,12 +10,15 @@ import {
   characterFormStateToPayload,
   ICharacterFormState,
 } from '../components/CharacterEditPanel';
+import type { ICharacterMaster } from '../models/Character';
 
 // Ver `.claude/rules/resources-logic.md` — Padrão 2 (ação com formulário).
 // Não há `useValidatedFormState`/Yup neste projeto ainda, então o estado do
 // formulário é `useState` simples e a validação (só `name` é obrigatório) é
 // feita na função de submit do componente, antes do `mutate()`.
-export function useCreateCharacterLogicData({ code, onSuccess }: { code: string; onSuccess: () => void }) {
+// `onSuccess` recebe o personagem criado — o componente pai (`mestre/page.tsx`)
+// usa isso para oferecer "salvar como template" logo em seguida.
+export function useCreateCharacterLogicData({ code, onSuccess }: { code: string; onSuccess: (character: ICharacterMaster) => void }) {
   const [createCharacterState, setCreateCharacterState] = useState<ICharacterFormState>(CHARACTER_FORM_DEFAULT_STATE);
 
   const createCharacterMutation = useMutation({
@@ -23,7 +26,7 @@ export function useCreateCharacterLogicData({ code, onSuccess }: { code: string;
     onSuccess: (res) => {
       notifications.show({ message: res.message['pt-br'], color: 'green' });
 
-      onSuccess();
+      onSuccess(res.data);
     },
     onError: (err: any) => {
       notifications.show({

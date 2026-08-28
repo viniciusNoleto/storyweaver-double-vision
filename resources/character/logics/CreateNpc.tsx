@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { notifications } from '@mantine/notifications';
-import { Avatar, Button, Group, Modal, NumberInput, Stack, TextInput } from '@mantine/core';
-import { Icon } from '@iconify/react';
+import { Button, Group, Modal, NumberInput, Stack, TextInput } from '@mantine/core';
 import { createCharacterService } from '../services/createCharacter';
+import { ImageUploadInput } from '../components/ImageUploadInput';
+import type { ICharacterMaster } from '../models/Character';
 
 // Ver `.claude/rules/resources-logic.md` — Padrão 2 (ação com formulário).
 // Criação rápida de NPC: mesmo endpoint de `CreateCharacter.tsx`
@@ -31,7 +32,7 @@ function toNumber(value: number | string): number {
   return typeof value === 'number' ? value : Number(value) || 0;
 }
 
-export function useCreateNpcLogicData({ code, onSuccess }: { code: string; onSuccess: () => void }) {
+export function useCreateNpcLogicData({ code, onSuccess }: { code: string; onSuccess: (character: ICharacterMaster) => void }) {
   const [createNpcState, setCreateNpcState] = useState<INpcFormState>(NPC_FORM_DEFAULT_STATE);
 
   const createNpcMutation = useMutation({
@@ -47,7 +48,7 @@ export function useCreateNpcLogicData({ code, onSuccess }: { code: string; onSuc
     onSuccess: (res) => {
       notifications.show({ message: res.message['pt-br'], color: 'green' });
 
-      onSuccess();
+      onSuccess(res.data);
     },
     onError: (err: any) => {
       notifications.show({
@@ -111,37 +112,17 @@ export function CreateNpcLogicComponent({
       centered
     >
       <Stack gap="md">
-        <Group
-          align="flex-end"
-          gap="sm"
-        >
-          <TextInput
-            label="Nome"
-            placeholder="Ex: Guarda da Cidade"
-            required
-            value={createNpcState.name}
-            onChange={(event) => updateField('name', event.currentTarget.value)}
-            className="flex-1"
-          />
-
-          <Avatar
-            src={createNpcState.image_url.trim() || null}
-            size={48}
-            radius="xl"
-          >
-            <Icon
-              icon="lucide:user"
-              width={24}
-              height={24}
-            />
-          </Avatar>
-        </Group>
-
         <TextInput
-          label="URL da imagem"
-          placeholder="https://..."
+          label="Nome"
+          placeholder="Ex: Guarda da Cidade"
+          required
+          value={createNpcState.name}
+          onChange={(event) => updateField('name', event.currentTarget.value)}
+        />
+
+        <ImageUploadInput
           value={createNpcState.image_url}
-          onChange={(event) => updateField('image_url', event.currentTarget.value)}
+          onChange={(url) => updateField('image_url', url)}
         />
 
         <Group grow>

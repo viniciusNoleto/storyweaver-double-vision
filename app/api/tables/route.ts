@@ -1,11 +1,32 @@
 import { randomBytes } from 'crypto';
 import { db } from '@/libs/db';
-import { tables, tableZones } from '@/db/schema';
+import { tables, tablePublicColumns, tableZones } from '@/db/schema';
 import { hashMasterKey } from '@/libs/tableAuth';
 import { setMasterSessionCookie } from '@/libs/session';
 import { ETableStatus } from '@/resources/table/enums/TableStatus';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+
+// Lista todas as Mesas já criadas. Sem checagem de Mestre — o app é de uso
+// pessoal (um único dono, sem contas de usuário), então a existência/nome de
+// uma Mesa não é considerado dado sensível (diferente de `master_key`, que
+// nunca é devolvida aqui — ver `tablePublicColumns`). Usada pelas telas
+// "Gerenciar Mesas" e "Exibir Mesa" (ver `.claude/rules/table-concept.md`).
+export async function GET() {
+  try {
+    const rows = await db.select(tablePublicColumns).from(tables).orderBy(desc(tables.created_at));
+
+    return NextResponse.json({
+      success: true,
+      message: { 'pt-br': 'Operação realizada com sucesso.', 'es-mx': 'Operación realizada con éxito.', 'en-us': 'Operation completed successfully.' },
+      data: rows,
+    });
+  } catch (e) {
+    console.error(e);
+
+    return NextResponse.json({ success: false, message: { 'pt-br': 'Erro ao listar as mesas.', 'es-mx': 'Error al listar las mesas.', 'en-us': 'Error listing tables.' }, data: null }, { status: 500 });
+  }
+}
 
 // Alfabeto sem caracteres ambíguos (sem 0/O, 1/I) — mesma lógica de
 // `generateRoomCode()` do cross-poker (app/api/rooms/route.ts lá), adaptada

@@ -8,6 +8,11 @@ services:
       dockerfile: ./configs/docker/node/Dockerfile.deploy
     ports:
       - 80:3000
+    volumes:
+      # Fotos de personagem enviadas via upload (ver app/api/uploads/characters/route.ts)
+      # precisam sobreviver a rebuilds/redeploys — o filesystem do container é
+      # efêmero sem isso.
+      - storyweaver-uploads:/app/public/uploads
     networks:
       - storyweaver-network
     depends_on:
@@ -40,3 +45,5 @@ networks:
 volumes:
   storyweaver-postgres-data:
     name: storyweaver-postgres-data
+  storyweaver-uploads:
+    name: storyweaver-uploads
