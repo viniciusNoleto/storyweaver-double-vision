@@ -130,6 +130,7 @@ export function CreateOriginLogicComponent({
       title="Criar Origem customizada"
       size="md"
       centered
+      zIndex={1000}
     >
       <Stack gap="md">
         <TextInput

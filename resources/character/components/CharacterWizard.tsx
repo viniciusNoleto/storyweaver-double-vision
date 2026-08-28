@@ -371,6 +371,7 @@ export function CharacterWizard({
         onClose={() => setDetailTarget(null)}
         title={detailTarget?.item.name ?? ''}
         centered
+        zIndex={1000}
       >
         {detailTarget ? renderDetailContent(detailTarget) : null}
       </Modal>
