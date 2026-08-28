@@ -865,7 +865,7 @@ Add this whole block right after the `step === 'origin'` block closes (i.e. righ
 
             <Button
               disabled={!itemsValid()}
-              onClick={() => setStep(selectedClass.extra_resources.some((resource) => resource.label === 'Magias conhecidas') ? 'spells' : 'review')}
+              onClick={() => setStep('review')}
             >
               Continuar
             </Button>
@@ -874,11 +874,7 @@ Add this whole block right after the `step === 'origin'` block closes (i.e. righ
       ) : null}
 ```
 
-Note: the `'spells'` step doesn't exist yet (that's Task 7) — this `onClick` referencing `'spells'` will fail `tsc` until Task 7 adds it to `WizardStep`. **For this task**, temporarily hardcode the target as `'review'` instead:
-```tsx
-              onClick={() => setStep('review')}
-```
-(Task 7 changes this line to the conditional version shown above.)
+Note: this "Continuar" hardcodes `'review'` for now because the `'spells'` step doesn't exist yet (that's Task 7) — referencing it here would fail `tsc` until Task 7 adds it to `WizardStep`. Task 7 Step 4 replaces this exact line with a conditional target.
 
 - [ ] **Step 6: Update the review step's "Voltar" and its ferramenta display**
 
