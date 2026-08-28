@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActionIcon, Button, Card, Group, Loader, Modal, SimpleGrid, Stack, Text, TextInput, Checkbox, Radio, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Icon } from '@iconify/react';
@@ -12,6 +12,7 @@ import { createCharacterService } from '../services/createCharacter';
 import { calculateAttributes } from '../models/calculateAttributes';
 import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL } from '../enums/Attribute';
 import { ImageUploadInput } from './ImageUploadInput';
+import { useCreateOriginLogicData, CreateOriginLogicComponent } from '../logics/CreateOrigin';
 import type { IClass, IOrigin, ISpecies } from '../models/RulesContent';
 
 type WizardStep = 'species' | 'class' | 'classChoices' | 'origin' | 'review';
@@ -196,6 +197,9 @@ export function CharacterWizard({
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [detailTarget, setDetailTarget] = useState<DetailTarget | null>(null);
+  const [creatingOrigin, setCreatingOrigin] = useState(false);
+
+  const queryClient = useQueryClient();
 
   const { data: speciesData, isLoading: speciesLoading } = useQuery({ queryKey: GET_SPECIES_KEY, queryFn: getSpeciesService, enabled: opened });
   const { data: classesData, isLoading: classesLoading } = useQuery({ queryKey: GET_CLASSES_KEY, queryFn: getClassesService, enabled: opened });
@@ -289,6 +293,20 @@ export function CharacterWizard({
     setOriginProficiency(item.proficiency_choice?.options[0] ?? null);
   }
 
+  const createOriginLogicData = useCreateOriginLogicData({
+    onSuccess: (origin) => {
+      // Insere a origem nova direto no cache da query (em vez de só invalidar
+      // e esperar um refetch) — assim `originsList`/`selectedOrigin` já
+      // enxergam ela no mesmo render, sem flash de "não encontrada".
+      queryClient.setQueryData(GET_ORIGINS_KEY, (old: { data: IOrigin[] } | undefined) => (
+        old ? { ...old, data: [...old.data, origin] } : old
+      ));
+
+      pickOrigin(origin);
+      setCreatingOrigin(false);
+    },
+  });
+
   function originValid(): boolean {
     if (!selectedOrigin) return false;
     if (originBonusIndex === null) return false;
@@ -356,6 +374,12 @@ export function CharacterWizard({
       >
         {detailTarget ? renderDetailContent(detailTarget) : null}
       </Modal>
+
+      <CreateOriginLogicComponent
+        logicData={createOriginLogicData}
+        opened={creatingOrigin}
+        onCancel={() => setCreatingOrigin(false)}
+      />
 
       <Modal
         opened={opened}
@@ -613,6 +637,27 @@ export function CharacterWizard({
                     </Group>
                   </Card>
                 ))}
+
+                <Card
+                  padding="sm"
+                  className="cursor-pointer border-dashed transition hover:border-primary-400/60"
+                  onClick={() => {
+                    createOriginLogicData.createOriginReset();
+                    setCreatingOrigin(true);
+                  }}
+                >
+                  <Group
+                    justify="center"
+                    wrap="nowrap"
+                    className="h-full"
+                  >
+                    <Icon icon="lucide:plus" />
+
+                    <Text fw={600}>
+                      Criar Origem customizada
+                    </Text>
+                  </Group>
+                </Card>
               </SimpleGrid>
             </>
           ) : (
