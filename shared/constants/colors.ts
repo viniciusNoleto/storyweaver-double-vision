@@ -44,6 +44,15 @@ export const PANEL_BG = '#241A12';
 // — mesma decisão do projeto de referência).
 export const PARCHMENT = '#E8D5A3';
 
+// Painel "de papel" — alterna com o painel "de vidro" (glass, via
+// PANEL_BG/BOARD_BG acima), mesmo padrão da referência do rework AAA HUD
+// (ver docs/superpowers/specs/2026-08-28-aaa-hud-redesign-design.md):
+// Collaboration Offer é pergaminho, Character Creator é vidro escuro.
+export const PARCHMENT_BG = '#E8D9B8';
+// Texto sobre PARCHMENT_BG — nunca PARCHMENT (claro) sobre PARCHMENT_BG
+// (claro sobre claro), precisa de um tom escuro próprio.
+export const INK_TEXT = '#2A1D12';
+
 export const PRIMARY_COLOR_PALETTE = colorVariations(PRIMARY_COLOR);
 export const SECONDARY_COLOR_PALETTE = colorVariations(SECONDARY_COLOR);
 export const TERTIARY_COLOR_PALETTE = colorVariations(TERTIARY_COLOR);

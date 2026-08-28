@@ -9,6 +9,8 @@ import {
   BOARD_BG,
   PANEL_BG,
   PARCHMENT,
+  PARCHMENT_BG,
+  INK_TEXT,
 } from './shared/constants/colors';
 
 // Redesign visual (ver `.claude/rules/table-concept.md` seção 6, bloco
@@ -35,6 +37,8 @@ export default {
         board: BOARD_BG,
         panel: PANEL_BG,
         parchment: PARCHMENT,
+        'parchment-panel': PARCHMENT_BG,
+        ink: INK_TEXT,
       },
       fontFamily: {
         display: ['var(--font-display)', 'Georgia', 'serif'],
