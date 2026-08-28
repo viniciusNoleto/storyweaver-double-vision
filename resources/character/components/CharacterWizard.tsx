@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Button, Card, Group, Loader, Modal, SimpleGrid, Stack, Text, TextInput, Checkbox, Radio, Divider } from '@mantine/core';
+import { ActionIcon, Button, Card, Group, Loader, Modal, SimpleGrid, Stack, Text, TextInput, Checkbox, Radio, Divider } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
+import { Icon } from '@iconify/react';
 import { getClassesService, GET_CLASSES_KEY } from '../services/getClasses';
 import { getSpeciesService, GET_SPECIES_KEY } from '../services/getSpecies';
 import { getOriginsService, GET_ORIGINS_KEY } from '../services/getOrigins';
@@ -14,6 +15,151 @@ import { ImageUploadInput } from './ImageUploadInput';
 import type { IClass, IOrigin, ISpecies } from '../models/RulesContent';
 
 type WizardStep = 'species' | 'class' | 'classChoices' | 'origin' | 'review';
+
+// "Ver detalhes" (botão de informação nos cards) — um modal genérico por
+// cima do wizard, sem afetar a seleção/progresso. Union discriminada porque
+// cada tipo mostra campos diferentes da ficha (ver renderDetailContent).
+type DetailTarget =
+  | { type: 'species'; item: ISpecies }
+  | { type: 'class'; item: IClass }
+  | { type: 'origin'; item: IOrigin };
+
+function renderDetailContent(target: DetailTarget) {
+  if (target.type === 'species') {
+    const { item } = target;
+
+    return (
+      <Stack gap="md">
+        <Text size="sm">
+          {item.description}
+        </Text>
+
+        {item.racial_abilities.length > 0 ? (
+          <>
+            <Divider
+              label="Habilidades Raciais"
+              labelPosition="left"
+            />
+
+            <Stack gap="sm">
+              {item.racial_abilities.map((ability) => (
+                <div key={ability.name}>
+                  <Text
+                    size="sm"
+                    fw={600}
+                  >
+                    {ability.name}
+                  </Text>
+
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                  >
+                    {ability.description}
+                  </Text>
+                </div>
+              ))}
+            </Stack>
+          </>
+        ) : null}
+      </Stack>
+    );
+  }
+
+  if (target.type === 'class') {
+    const { item } = target;
+
+    return (
+      <Stack gap="md">
+        <Text size="sm">
+          {item.description}
+        </Text>
+
+        <Text size="sm">
+          {`Atributo(s) primário(s): ${item.primary_attributes.map((attribute) => ATTRIBUTE_LABEL[attribute as keyof typeof ATTRIBUTE_LABEL] ?? attribute).join(', ')}`}
+        </Text>
+
+        {item.attribute_bonuses.length > 0 ? (
+          <Text size="sm">
+            {`Bônus de atributo: ${item.attribute_bonuses.map((bonus) => `${bonus.amount >= 0 ? '+' : ''}${bonus.amount} ${ATTRIBUTE_LABEL[bonus.attribute as keyof typeof ATTRIBUTE_LABEL] ?? bonus.attribute}`).join(', ')}`}
+          </Text>
+        ) : null}
+
+        <Text size="sm">
+          {`Vida: ${item.hp_base}${item.mana_base > 0 ? ` · Mana: ${item.mana_base}` : ''} · Evasão: ${item.evasion}`}
+        </Text>
+
+        {item.extra_resources.length > 0 ? (
+          <>
+            <Divider
+              label="Recursos da Classe"
+              labelPosition="left"
+            />
+
+            <Stack gap={4}>
+              {item.extra_resources.map((resource) => (
+                <Text
+                  key={resource.label}
+                  size="sm"
+                  c="dimmed"
+                >
+                  {`${resource.label}: ${resource.value}`}
+                </Text>
+              ))}
+            </Stack>
+          </>
+        ) : null}
+      </Stack>
+    );
+  }
+
+  const { item } = target;
+
+  return (
+    <Stack gap="md">
+      <Text size="sm">
+        {item.description}
+      </Text>
+
+      <Text size="sm">
+        {`Itens iniciais: ${item.starting_items}`}
+      </Text>
+
+      <Text size="sm">
+        {`Dinheiro inicial: ${item.starting_money}`}
+      </Text>
+
+      <Divider
+        label="Bônus de atributo (escolha um na hora de selecionar)"
+        labelPosition="left"
+      />
+
+      <Stack gap={4}>
+        {item.attribute_bonus_options.map((option, index) => (
+          <Text
+            key={index}
+            size="sm"
+            c="dimmed"
+          >
+            {option.map((bonus) => `${bonus.amount >= 0 ? '+' : ''}${bonus.amount} ${ATTRIBUTE_LABEL[bonus.attribute as keyof typeof ATTRIBUTE_LABEL] ?? bonus.attribute}`).join(', ')}
+          </Text>
+        ))}
+      </Stack>
+
+      {item.granted_proficiency ? (
+        <Text size="sm">
+          {`Perícia concedida: ${item.granted_proficiency}`}
+        </Text>
+      ) : null}
+
+      {item.proficiency_choice ? (
+        <Text size="sm">
+          {`Perícia (escolha uma): ${item.proficiency_choice.options.join(' ou ')}`}
+        </Text>
+      ) : null}
+    </Stack>
+  );
+}
 
 // Uma classe tem "escolhas" quando oferece perícia, conhecimento ou
 // equipamento à escolha do jogador — usada tanto para decidir se a etapa
@@ -49,6 +195,7 @@ export function CharacterWizard({
   const [originProficiency, setOriginProficiency] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [detailTarget, setDetailTarget] = useState<DetailTarget | null>(null);
 
   const { data: speciesData, isLoading: speciesLoading } = useQuery({ queryKey: GET_SPECIES_KEY, queryFn: getSpeciesService, enabled: opened });
   const { data: classesData, isLoading: classesLoading } = useQuery({ queryKey: GET_CLASSES_KEY, queryFn: getClassesService, enabled: opened });
@@ -200,9 +347,19 @@ export function CharacterWizard({
   const anyLoading = speciesLoading || classesLoading || originsLoading;
 
   return (
-    <Modal
-      opened={opened}
-      onClose={cancel}
+    <>
+      <Modal
+        opened={!!detailTarget}
+        onClose={() => setDetailTarget(null)}
+        title={detailTarget?.item.name ?? ''}
+        centered
+      >
+        {detailTarget ? renderDetailContent(detailTarget) : null}
+      </Modal>
+
+      <Modal
+        opened={opened}
+        onClose={cancel}
       title="Criar Personagem"
       size="lg"
       centered
@@ -230,9 +387,25 @@ export function CharacterWizard({
                 className="cursor-pointer transition hover:border-primary-400/60"
                 onClick={() => pickSpecies(item)}
               >
-                <Text fw={600}>
-                  {item.name}
-                </Text>
+                <Group
+                  justify="space-between"
+                  wrap="nowrap"
+                >
+                  <Text fw={600}>
+                    {item.name}
+                  </Text>
+
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDetailTarget({ type: 'species', item });
+                    }}
+                  >
+                    <Icon icon="lucide:info" />
+                  </ActionIcon>
+                </Group>
               </Card>
             ))}
           </SimpleGrid>
@@ -256,9 +429,25 @@ export function CharacterWizard({
                 className="cursor-pointer transition hover:border-primary-400/60"
                 onClick={() => pickClass(item)}
               >
-                <Text fw={600}>
-                  {item.name}
-                </Text>
+                <Group
+                  justify="space-between"
+                  wrap="nowrap"
+                >
+                  <Text fw={600}>
+                    {item.name}
+                  </Text>
+
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDetailTarget({ type: 'class', item });
+                    }}
+                  >
+                    <Icon icon="lucide:info" />
+                  </ActionIcon>
+                </Group>
 
                 <Text
                   size="xs"
@@ -403,9 +592,25 @@ export function CharacterWizard({
                     className="cursor-pointer transition hover:border-primary-400/60"
                     onClick={() => pickOrigin(item)}
                   >
-                    <Text fw={600}>
-                      {item.name}
-                    </Text>
+                    <Group
+                      justify="space-between"
+                      wrap="nowrap"
+                    >
+                      <Text fw={600}>
+                        {item.name}
+                      </Text>
+
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDetailTarget({ type: 'origin', item });
+                        }}
+                      >
+                        <Icon icon="lucide:info" />
+                      </ActionIcon>
+                    </Group>
                   </Card>
                 ))}
               </SimpleGrid>
@@ -571,6 +776,7 @@ export function CharacterWizard({
           </Group>
         </Stack>
       ) : null}
-    </Modal>
+      </Modal>
+    </>
   );
 }
