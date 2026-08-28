@@ -37,6 +37,16 @@ export const characters = pgTable('characters', {
   has_mana: boolean('has_mana').notNull().default(false),
   mana_current: integer('mana_current').notNull().default(0),
   mana_max: integer('mana_max').notNull().default(0),
+  // Resultado do Wizard de criação (ver
+  // docs/superpowers/specs/2026-08-28-character-creation-wizard-design.md) —
+  // todos nullable: personagens antigos, criados pelo formulário simples, e
+  // NPCs continuam sem esses campos preenchidos.
+  class_id: integer('class_id'),
+  species_id: integer('species_id'),
+  origin_id: integer('origin_id'),
+  level: integer('level').notNull().default(1),
+  // Record<EAttribute, number> | null — ver resources/character/enums/Attribute.ts
+  attributes: jsonb('attributes'),
   created_at: timestamp('created_at'),
   updated_at: timestamp('updated_at'),
 });
