@@ -126,7 +126,10 @@ function CharacterRulesSummary({
         <SimpleGrid cols={4}>
           {ATTRIBUTE_ORDER.map((attribute) => (
             <div key={attribute}>
-              <Text size="xs" c="dimmed">
+              <Text
+                size="xs"
+                c="dimmed"
+              >
                 {ATTRIBUTE_LABEL[attribute]}
               </Text>
 
@@ -141,7 +144,11 @@ function CharacterRulesSummary({
       {classItem && classItem.extra_resources.length > 0 ? (
         <Stack gap={4}>
           {classItem.extra_resources.map((resource) => (
-            <Text key={resource.label} size="sm" c="dimmed">
+            <Text
+              key={resource.label}
+              size="sm"
+              c="dimmed"
+            >
               {`${resource.label}: ${resource.value}`}
             </Text>
           ))}
@@ -308,7 +315,10 @@ export function CharacterEditPanel({
 
         {classId ? (
           <>
-            <Divider label="Regras (Contos e Cantos de Vilgard)" labelPosition="left" />
+            <Divider
+              label="Regras (Contos e Cantos de Vilgard)"
+              labelPosition="left"
+            />
 
             <CharacterRulesSummary
               classId={classId}

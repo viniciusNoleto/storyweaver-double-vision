@@ -15,6 +15,14 @@ import type { IClass, IOrigin, ISpecies } from '../models/RulesContent';
 
 type WizardStep = 'species' | 'class' | 'classChoices' | 'origin' | 'review';
 
+// Uma classe tem "escolhas" quando oferece perícia, conhecimento ou
+// equipamento à escolha do jogador — usada tanto para decidir se a etapa
+// `classChoices` deve ser exibida (pickClass) quanto para decidir para onde
+// o botão "Voltar" da etapa Origem deve retornar.
+function classHasChoices(item: IClass): boolean {
+  return !!item.skill_proficiency_choice?.count || !!item.knowledge_proficiency_choice?.count || !!item.equipment_choice;
+}
+
 // Wizard de criação de Personagem guiado pelas regras de Contos e Cantos de
 // Vilgard (ver docs/superpowers/specs/2026-08-28-character-creation-wizard-design.md).
 // Motor genérico: nenhuma etapa conhece o nome de nenhuma classe/espécie/
@@ -87,7 +95,7 @@ export function CharacterWizard({
     // Classe sem NENHUMA escolha (nem perícia, nem conhecimento, nem
     // equipamento) pula direto pra Origem — motor genérico não força uma
     // etapa vazia.
-    const hasChoices = !!item.skill_proficiency_choice?.count || !!item.knowledge_proficiency_choice?.count || !!item.equipment_choice;
+    const hasChoices = classHasChoices(item);
 
     setStep(hasChoices ? 'classChoices' : 'origin');
   }
@@ -455,7 +463,7 @@ export function CharacterWizard({
               variant="subtle"
               color="gray"
               size="xs"
-              onClick={() => (selectedOrigin ? setOriginId(null) : setStep(selectedClass?.skill_proficiency_choice || selectedClass?.knowledge_proficiency_choice?.count || selectedClass?.equipment_choice ? 'classChoices' : 'class'))}
+              onClick={() => (selectedOrigin ? setOriginId(null) : setStep(selectedClass && classHasChoices(selectedClass) ? 'classChoices' : 'class'))}
             >
               Voltar
             </Button>
