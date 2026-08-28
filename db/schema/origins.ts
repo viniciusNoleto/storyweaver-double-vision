@@ -12,6 +12,11 @@ export const origins = pgTable('origins', {
   granted_proficiency: varchar('granted_proficiency', { length: 200 }),
   // { options: string[] } | null — perícia com escolha (ex: blefe ou furtividade)
   proficiency_choice: jsonb('proficiency_choice'),
+  // { count: number, tool_ids: number[] } | null — escolha de Ferramenta,
+  // referenciando IDs reais de `tools` (nunca texto solto). Mutuamente
+  // exclusivo com granted_proficiency/proficiency_choice na prática (uma
+  // origem concede OU perícia OU ferramenta), mas o schema não força isso.
+  tool_choice: jsonb('tool_choice'),
   starting_items: text('starting_items').notNull(),
   starting_money: varchar('starting_money', { length: 50 }).notNull(),
   // Reservado para quando a criação de Origem customizada pela interface

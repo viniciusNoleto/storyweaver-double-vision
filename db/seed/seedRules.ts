@@ -4,7 +4,7 @@ config({ path: '.env' });
 
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { classes, species, origins } from '../schema';
+import { classes, species, origins, tools } from '../schema';
 import { EAttribute } from '../../resources/character/enums/Attribute';
 
 const pool = new Pool({
@@ -285,7 +285,10 @@ async function seedOrigins() {
       description: 'Criado entre bancadas, ferramentas e o som constante do trabalho manual, você aprendeu cedo o valor da paciência e da precisão.',
       attribute_bonus_options: [[{ attribute: A.DESTREZA, amount: 2 }], [{ attribute: A.DESTREZA, amount: 1 }, { attribute: A.INTELIGENCIA, amount: 1 }]],
       granted_proficiency: null,
-      proficiency_choice: { options: ['Ferramentas (carpinteiro)', 'Ferramentas (ferreiro)', 'Ferramentas (couro)', 'Ferramentas (oleiro)'] },
+      proficiency_choice: null,
+      // "Ferramentas (carpinteiro, ferreiro, couro ou oleiro)" — resolvido
+      // pelo seedTools()/updateFilhoDaOficinaToolChoice() logo abaixo, que
+      // preenche os IDs reais depois que a tabela `tools` existir.
       starting_items: 'Conjunto simples de ferramentas do ofício, avental resistente',
       starting_money: '12 cg',
     },
@@ -358,16 +361,73 @@ async function seedOrigins() {
   console.log(`${rows.length} origens inseridas.`);
 }
 
+async function seedTools() {
+  const rows = [
+    { name: 'Ferramentas de Carpinteiro', price: '8 cg', attribute: A.FORCA, description: 'Um carpinteiro habilidoso consegue selar, reforçar ou forçar a abertura de portas, caixotes e recipientes de madeira, mesmo os mais resistentes, desde que tenha tempo e espaço para trabalhar.' },
+    { name: 'Ferramentas de Cartógrafo', price: '15 cg', attribute: A.SABEDORIA, description: 'Um cartógrafo experiente consegue registrar com precisão áreas exploradas, criando mapas que refletem caminhos, obstáculos e pontos de referência relevantes de uma região limitada.' },
+    { name: 'Ferramentas de Coureiro', price: '5 cg', attribute: A.DESTREZA, description: 'O usuário é capaz de moldar, ajustar e alterar itens de couro, refinando sua estética, encaixe ou acabamento. Um bom coureiro consegue adaptar peças para diferentes usuários ou estilos sem comprometer sua funcionalidade.' },
+    { name: 'Ferramentas de Entalhador', price: '1 cg', attribute: A.DESTREZA, description: 'Um entalhador habilidoso pode criar padrões, símbolos ou detalhes decorativos, além de ajustar o equilíbrio e a forma de objetos de madeira, tornando-os únicos ou mais eficazes.' },
+    { name: 'Ferramentas de Ferreiro', price: '20 cg', attribute: A.FORCA, description: 'Um ferreiro treinado consegue dobrar, reforçar ou romper estruturas metálicas simples, como trancas, dobradiças e recipientes, utilizando técnica e impacto para superar resistências elevadas.' },
+    { name: 'Ferramentas de Funileiro', price: '50 cg', attribute: A.DESTREZA, description: 'Um funileiro consegue montar rapidamente pequenos dispositivos ou objetos improvisados a partir de sucata, criando soluções temporárias que podem ser decisivas em situações emergenciais.' },
+    { name: 'Ferramentas de Joalheiro', price: '25 cg', attribute: A.INTELIGENCIA, description: 'Um joalheiro experiente consegue avaliar com precisão o valor e a autenticidade de pedras preciosas, identificando qualidade, lapidação e possíveis falsificações.' },
+    { name: 'Ferramentas de Oleiro', price: '10 cg', attribute: A.INTELIGENCIA, description: 'Um oleiro treinado consegue analisar objetos de cerâmica e identificar como foram manuseados recentemente, reconhecendo padrões de uso, desgaste ou interferência externa.' },
+    { name: 'Ferramentas de Pedreiro', price: '10 cg', attribute: A.FORCA, description: 'Com essas ferramentas, um pedreiro é capaz de cinzelar símbolos, inscrições ou cavidades em superfícies de pedra, seja para marcação, passagem ou encaixe de mecanismos simples.' },
+    { name: 'Ferramentas de Sapateiro', price: '5 cg', attribute: A.DESTREZA, description: 'Um sapateiro habilidoso pode modificar calçados de forma temporária, melhorando aderência, equilíbrio ou flexibilidade, o que pode facilitar movimentos acrobáticos em situações específicas.' },
+    { name: 'Ferramentas de Tecelão', price: '1 cg', attribute: A.DESTREZA, description: 'Um tecelão consegue reparar rasgos, reforçar costuras ou adicionar pequenos ornamentos, restaurando a utilidade ou a aparência de roupas e tecidos danificados.' },
+    { name: 'Ferramentas de Vidreiro', price: '30 cg', attribute: A.INTELIGENCIA, description: 'Um vidreiro treinado pode analisar objetos de vidro e determinar como foram manuseados recentemente, identificando marcas de uso, impacto ou manipulação cuidadosa.' },
+    { name: 'Suprimentos de Alquimista', price: '50 cg', attribute: A.INTELIGENCIA, description: 'Um alquimista consegue identificar compostos desconhecidos, analisar reações químicas simples ou até provocar combustão controlada, desde que tenha os materiais adequados.' },
+    { name: 'Suprimentos de Calígrafo', price: '10 cg', attribute: A.DESTREZA, description: 'Um calígrafo experiente pode produzir textos difíceis de falsificar, reproduzindo estilos únicos de escrita ou criando documentos com alto grau de autenticidade visual.' },
+    { name: 'Suprimentos de Cervejeiro', price: '20 cg', attribute: A.INTELIGENCIA, description: 'Um cervejeiro habilidoso consegue identificar tipos de álcool, processos de produção e até detectar contaminações ou envenenamentos em bebidas.' },
+    { name: 'Suprimentos de Pintor', price: '10 cg', attribute: A.SABEDORIA, description: 'Um pintor treinado consegue reproduzir imagens reconhecíveis de pessoas, locais ou objetos observados, capturando detalhes suficientes para identificação posterior.' },
+    { name: 'Utensílios de Cozinheiro', price: '1 cg', attribute: A.SABEDORIA, description: 'Um cozinheiro experiente pode melhorar significativamente o sabor de alimentos simples, além de identificar comida estragada ou contaminada antes que cause danos.' },
+    { name: 'Ferramentas de Ladrão', price: '25 cg', attribute: A.DESTREZA, description: 'Um usuário treinado consegue abrir fechaduras complexas ou desarmar armadilhas mecânicas, desde que tenha tempo e concentração para agir com cuidado.' },
+    { name: 'Ferramentas de Navegador', price: '25 cg', attribute: A.SABEDORIA, description: 'Um navegador habilidoso pode traçar rotas seguras ou determinar sua posição observando estrelas, correntes ou referências naturais.' },
+    { name: 'Kit de Herbalismo', price: '5 cg', attribute: A.INTELIGENCIA, description: 'Um herbalista treinado consegue identificar plantas, suas propriedades e possíveis efeitos, sejam eles medicinais, tóxicos ou utilitários.' },
+    { name: 'Kit de Jogos', price: 'valor variável em cg', attribute: A.SABEDORIA, description: 'Um jogador experiente consegue perceber trapaças, blefes ou padrões de comportamento, além de usar estratégia para aumentar suas chances de vitória.' },
+    { name: 'Kit de Veneno', price: '50 cg', attribute: A.INTELIGENCIA, description: 'Um especialista consegue detectar a presença de venenos em objetos ou substâncias, reconhecendo sinais sutis de contaminação.' },
+  ];
+
+  await db.insert(tools).values(rows);
+  console.log(`${rows.length} ferramentas inseridas.`);
+}
+
+// Preenche origins.tool_choice da "Filho da Oficina" com os IDs reais das 4
+// ferramentas que o manual oferece como escolha ("Ferramentas: carpinteiro,
+// ferreiro, couro ou oleiro") — só roda depois que tools/origins já existem.
+async function linkFilhoDaOficinaToolChoice() {
+  const toolRows = await db.select({ id: tools.id, name: tools.name }).from(tools);
+  const wanted = ['Ferramentas de Carpinteiro', 'Ferramentas de Ferreiro', 'Ferramentas de Coureiro', 'Ferramentas de Oleiro'];
+  const toolIds = wanted.map((name) => toolRows.find((row) => row.name === name)?.id).filter((id): id is number => typeof id === 'number');
+
+  if (toolIds.length !== wanted.length) {
+    console.log('linkFilhoDaOficinaToolChoice: nem todas as 4 ferramentas foram encontradas, pulando.');
+
+    return;
+  }
+
+  const { eq } = await import('drizzle-orm');
+
+  // `proficiency_choice: null` também aqui — bancos já seedados antes desta
+  // mudança (onde seedOrigins() foi pulado por idempotência) ainda carregam
+  // o texto solto antigo ("Ferramentas (carpinteiro)"...) nessa coluna.
+  await db.update(origins).set({ tool_choice: { count: 1, tool_ids: toolIds }, proficiency_choice: null }).where(eq(origins.name, 'Filho da Oficina'));
+  console.log('Filho da Oficina: tool_choice preenchido, proficiency_choice limpo.');
+}
+
 // Idempotente: só popula se as tabelas estiverem vazias — seguro rodar mais
 // de uma vez (ex: depois de recriar o banco local).
 async function main() {
   const [existingClasses] = await db.select({ id: classes.id }).from(classes).limit(1);
   const [existingSpecies] = await db.select({ id: species.id }).from(species).limit(1);
   const [existingOrigins] = await db.select({ id: origins.id }).from(origins).limit(1);
+  const [existingTools] = await db.select({ id: tools.id }).from(tools).limit(1);
 
   if (!existingClasses) await seedClasses(); else console.log('classes já populada, pulando.');
   if (!existingSpecies) await seedSpecies(); else console.log('species já populada, pulando.');
   if (!existingOrigins) await seedOrigins(); else console.log('origins já populada, pulando.');
+  if (!existingTools) await seedTools(); else console.log('tools já populada, pulando.');
+
+  await linkFilhoDaOficinaToolChoice();
 
   process.exit(0);
 }

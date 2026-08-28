@@ -56,6 +56,20 @@ export interface ISpecies {
   racial_abilities: IRacialAbility[];
 }
 
+export interface IToolChoice {
+  count: number;
+  tool_ids: number[];
+}
+
+// Espelha db/schema/tools.ts.
+export interface ITool {
+  id: number;
+  name: string;
+  price: string;
+  attribute: `${EAttribute}`;
+  description: string;
+}
+
 // Espelha db/schema/origins.ts.
 export interface IOrigin {
   id: number;
@@ -64,6 +78,9 @@ export interface IOrigin {
   attribute_bonus_options: IAttributeBonus[][];
   granted_proficiency: string | null;
   proficiency_choice: { options: string[] } | null;
+  // Escolha de Ferramenta — referencia IDs reais de `tools`, nunca texto
+  // solto (ver .claude/rules/table-concept.md).
+  tool_choice: IToolChoice | null;
   starting_items: string;
   starting_money: string;
   is_custom: boolean;
