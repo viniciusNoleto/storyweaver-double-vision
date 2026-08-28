@@ -20,7 +20,7 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     zone_id: c.zone_id,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
-    stats: c.stats as Record<string, number>,
+    extra_hp: c.extra_hp,
     status_effects: c.status_effects as EStatusEffect[],
     visible: c.visible,
     has_mana: c.has_mana,
@@ -31,12 +31,16 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
   };
 }
 
-// Aplica dano/cura (hp) ou gasto/restauração de mana a um personagem. Só o
-// Mestre pode. `hp_current` sempre clampado entre 0 e hp_max; `mana_current`
-// sempre clampado entre 0 e mana_max — ações de mana exigem
-// `character.has_mana === true` (422 caso contrário). Publica um evento
-// realtime COM payload (`character-action`) para a Tela de Exibição animar a
-// mudança, em vez de só refazer o fetch como o `state-changed` sem payload.
+// Aplica dano/cura (hp), gasto/restauração de mana, ou adição/remoção de
+// vida extra a um personagem. Só o Mestre pode. `hp_current` sempre clampado
+// entre 0 e hp_max; `mana_current` sempre clampado entre 0 e mana_max — ações
+// de mana exigem `character.has_mana === true` (422 caso contrário).
+// `extra_hp` nunca vai abaixo de 0, sem teto superior (ver comentário em
+// `db/schema/characters.ts`). `damage` abate primeiro de `extra_hp` — só o
+// que sobrar (se sobrar) desconta de `hp_current` (regra de produto pedida
+// pelo usuário). Publica um evento realtime COM payload (`character-action`)
+// para a Tela de Exibição animar a mudança, em vez de só refazer o fetch como
+// o `state-changed` sem payload.
 export async function POST(request: Request, { params }: { params: Promise<{ code: string; id: string }> }) {
   try {
     const { code, id } = await params;
@@ -59,15 +63,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     const type = body?.type;
     const amount = body?.amount;
 
-    const validTypes = ['damage', 'heal', 'mana-spend', 'mana-restore'];
+    const validTypes = ['damage', 'heal', 'mana-spend', 'mana-restore', 'extra-add', 'extra-remove'];
 
     if (!validTypes.includes(type) || typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({
         success: false,
         message: {
-          'pt-br': 'Informe um tipo de ação ("damage", "heal", "mana-spend" ou "mana-restore") e um valor maior que zero.',
-          'es-mx': 'Ingresa un tipo de acción ("damage", "heal", "mana-spend" o "mana-restore") y un valor mayor que cero.',
-          'en-us': 'Provide an action type ("damage", "heal", "mana-spend" or "mana-restore") and an amount greater than zero.',
+          'pt-br': 'Informe um tipo de ação ("damage", "heal", "mana-spend", "mana-restore", "extra-add" ou "extra-remove") e um valor maior que zero.',
+          'es-mx': 'Ingresa un tipo de acción ("damage", "heal", "mana-spend", "mana-restore", "extra-add" o "extra-remove") y un valor mayor que cero.',
+          'en-us': 'Provide an action type ("damage", "heal", "mana-spend", "mana-restore", "extra-add" or "extra-remove") and an amount greater than zero.',
         },
         data: null,
       }, { status: 422 });
@@ -102,10 +106,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       const delta = type === 'mana-spend' ? -amount : amount;
 
       updates.mana_current = clamp(character.mana_current + delta, 0, character.mana_max);
-    } else {
-      const delta = type === 'damage' ? -amount : amount;
+    } else if (type === 'extra-add') {
+      updates.extra_hp = character.extra_hp + amount;
+    } else if (type === 'extra-remove') {
+      updates.extra_hp = Math.max(character.extra_hp - amount, 0);
+    } else if (type === 'damage') {
+      // Dano abate primeiro de `extra_hp` — só o excedente (se houver)
+      // desconta de `hp_current`. Regra de produto pedida pelo usuário.
+      const extraAbsorbed = Math.min(character.extra_hp, amount);
+      const remainingDamage = amount - extraAbsorbed;
 
-      updates.hp_current = clamp(character.hp_current + delta, 0, character.hp_max);
+      updates.extra_hp = character.extra_hp - extraAbsorbed;
+      updates.hp_current = clamp(character.hp_current - remainingDamage, 0, character.hp_max);
+    } else {
+      updates.hp_current = clamp(character.hp_current + amount, 0, character.hp_max);
     }
 
     const [updated] = await db
@@ -124,9 +138,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
         hp_max: updated.hp_max,
         // Sempre presentes no payload do evento, independente do tipo de
         // ação — simplifica quem consome (não precisa checar `action` antes
-        // de ler mana_current/mana_max). Ver `.claude/rules/table-concept.md`.
+        // de ler mana_current/mana_max/extra_hp). Ver `.claude/rules/table-concept.md`.
         mana_current: updated.mana_current,
         mana_max: updated.mana_max,
+        extra_hp: updated.extra_hp,
       },
     });
 
@@ -135,6 +150,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       heal: { 'pt-br': 'Cura aplicada com sucesso.', 'es-mx': 'Curación aplicada con éxito.', 'en-us': 'Heal applied successfully.' },
       'mana-spend': { 'pt-br': 'Mana gasta com sucesso.', 'es-mx': 'Maná gastado con éxito.', 'en-us': 'Mana spent successfully.' },
       'mana-restore': { 'pt-br': 'Mana restaurada com sucesso.', 'es-mx': 'Maná restaurado con éxito.', 'en-us': 'Mana restored successfully.' },
+      'extra-add': { 'pt-br': 'Vida extra adicionada com sucesso.', 'es-mx': 'Vida extra añadida con éxito.', 'en-us': 'Extra HP added successfully.' },
+      'extra-remove': { 'pt-br': 'Vida extra removida com sucesso.', 'es-mx': 'Vida extra eliminada con éxito.', 'en-us': 'Extra HP removed successfully.' },
     };
 
     return NextResponse.json({

@@ -11,7 +11,9 @@ export type CreateCharacterServicePayload = {
   zone_id?: number;
   hp_current?: number;
   hp_max?: number;
-  stats?: Record<string, number>;
+  // Vida extra — bônus separado da vida normal (ver
+  // `db/schema/characters.ts`). Default 0 na rota se ausente.
+  extra_hp?: number;
   status_effects?: EStatusEffect[];
   visible?: boolean;
   // Mana — defaults na rota: has_mana=false, mana_current=0, mana_max=0 se

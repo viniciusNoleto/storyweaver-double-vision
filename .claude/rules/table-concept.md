@@ -15,9 +15,9 @@ Este projeto foi criado a partir do `~/personal/cross-poker` (mesma stack Next.j
 | **Chave do Mestre** | `master_key` | Segredo gerado na criação da Mesa; autentica o link do Mestre. Só o hash (`master_key_hash`) é persistido. |
 | **Ficha / Personagem** | `Character` | Um personagem (jogador ou NPC) representado por uma carta na tela (etapa 10 — antes era um token circular). |
 | **Vida** | `hp_current` / `hp_max` | Pontos de vida atuais/máximos. Só aparecem como número na Tela do Mestre — nunca na Exibição. |
-| **Atributos** | `stats` (jsonb) | Atributos numéricos extras livres (defesa, força, etc.) — só Mestre vê/edita. Não usados pelo anel de cor. Mana **não** fica aqui desde a etapa 10 — tem campos dedicados (ver linha "Mana" abaixo). |
+| **Vida extra** | `extra_hp` | Bônus de vida separado da vida normal, adicionado/removido livremente pelo Mestre (sem teto próprio). Dano é sempre abatido daqui primeiro; só o excedente desconta de `hp_current`. Entra no numerador E denominador da fórmula de cor (seção 2). Mestre-only, nunca aparece na Exibição — mesma regra de `hp_current`/`hp_max`. |
 | **Condições** | `status_effects` (`EStatusEffect[]`) | Desde a etapa 10: conjunto FIXO de 4 estados — atordoado, envenenado, preso, sangrando (`resources/character/enums/StatusEffect.ts`). Cada um tem ícone + animação contínua própria (`StatusEffectBadge.tsx`) enquanto ativo. Sem número associado; aparecem em ambas as telas. |
-| **Mana** | `has_mana` / `mana_current` / `mana_max` | Desde a etapa 10: recurso numérico dedicado, opcional por personagem (`has_mana`). Representada visualmente por cristais azuis (`ManaCrystals.tsx`) — os gastos ficam marcados vazios na mesma posição, os não gastos continuam cheios. **Exceção deliberada** à regra de "nenhum número de jogo na Exibição": ao contrário de vida/stats, `mana_current`/`mana_max` aparecem nas DUAS telas (decisão de produto tomada com o usuário nesta etapa — é um efeito visual de contagem, não um número escondido). Ações rápidas via `POST .../characters/[id]/actions` com `type: 'mana-spend'\|'mana-restore'`, clampado 0..mana_max. |
+| **Mana** | `has_mana` / `mana_current` / `mana_max` | Desde a etapa 10: recurso numérico dedicado, opcional por personagem (`has_mana`). Representada visualmente por cristais azuis (`ManaCrystals.tsx`) — os gastos ficam marcados vazios na mesma posição, os não gastos continuam cheios. **Exceção deliberada** à regra de "nenhum número de jogo na Exibição": ao contrário de vida, `mana_current`/`mana_max` aparecem nas DUAS telas (decisão de produto tomada com o usuário nesta etapa — é um efeito visual de contagem, não um número escondido). Ações rápidas via `POST .../characters/[id]/actions` com `type: 'mana-spend'\|'mana-restore'`, clampado 0..mana_max. |
 | **Tela do Mestre** | `master view` | `app/mesa/[code]/mestre` — números reais, edição de tudo. |
 | **Tela de Exibição** | `display view` | `app/mesa/[code]/exibicao` — pública, só o anel de cor + nome + imagem, nenhum número. |
 | **Tabuleiro** | `TableBoard` | Área onde as fichas ficam, organizada em divisões (ver linha abaixo). |
@@ -34,7 +34,7 @@ No código (rotas, tabelas, enums, interfaces, nomes de arquivo), use os nomes e
 - **Link de Exibição**: `/mesa/[code]/exibicao`. Público, sem senha, sem cookie — feito para ser aberto num telão/TV. Só leitura.
 - Personagens pertencem a uma **divisão** (`TableZone`/`zone_id`) do tabuleiro — não existe mais posicionamento livre por pixel/porcentagem (`position_x`/`position_y` foram removidos do schema na etapa 8). Divisões ficam sempre lado a lado, sempre do mesmo tamanho entre si (nunca porcentagem calculada manualmente — é `flex: 1 1 0` em cada uma). Toda Mesa nasce com 1 divisão; o Mestre pode adicionar (até 6, ver `MAX_ZONES_PER_TABLE` em `app/api/tables/[code]/zones/route.ts`) ou remover — ao remover, as fichas migram para a divisão vizinha que sobrar (a anterior por `position`; se não houver anterior, a próxima). Dentro de uma divisão, as fichas se auto-organizam centralizadas (flex-wrap), sem controle manual de posição.
 - Mestre pode marcar um personagem como `visible: false` para escondê-lo da Exibição (ex.: antes de "revelar" um NPC).
-- **Nenhum número de jogo** (hp, stats) pode existir no payload nem no DOM da Exibição — nem mesmo em atributos ocultos, comentários ou `data-*`. Verificação obrigatória na Etapa de verificação final. Exceção documentada: `is_defeated` (booleano `hp_current <= 0`, calculado no servidor) é permitido na Exibição pelo mesmo motivo que `hp_color` já era — é um dado DERIVADO, nunca o número bruto.
+- **Nenhum número de jogo** (hp) pode existir no payload nem no DOM da Exibição — nem mesmo em atributos ocultos, comentários ou `data-*`. Verificação obrigatória na Etapa de verificação final. Exceção documentada: `is_defeated` (booleano `hp_current <= 0`, calculado no servidor) é permitido na Exibição pelo mesmo motivo que `hp_color` já era — é um dado DERIVADO, nunca o número bruto.
 - Mestre pode aplicar **dano** ou **cura** a um personagem (`POST /api/tables/[code]/characters/[id]/actions`, body `{ type: 'damage'|'heal', amount }`) — sempre clampado entre `0` e `hp_max`. Isso publica um evento realtime com payload (`character-action`, ver seção 3) para a Tela de Exibição animar a mudança **sem nunca mostrar o valor numérico** (só efeito visual — flash/tremor/brilho); a Tela do Mestre, que já mostra números reais, pode mostrar o valor (`-5`/`+3`) na própria animação.
 
 ### Cor do anel de vida (Exibição) — fórmula canônica
@@ -42,10 +42,12 @@ No código (rotas, tabelas, enums, interfaces, nomes de arquivo), use os nomes e
 Vive em `resources/character/models/HealthColor.ts` — **única implementação**, não reimplementar em componente nenhum.
 
 ```
-percent = clamp(hp_current / hp_max * 100, 0, 100)
+percent = clamp((hp_current + extra_hp) / (hp_max + extra_hp) * 100, 0, 100)
 if percent <= 50: t = percent / 50;      color = lerp(RED,    YELLOW, t)
 if percent  > 50: t = (percent - 50)/50; color = lerp(YELLOW, GREEN,  t)
 ```
+
+`extra_hp` (vida extra, ver tabela de vocabulário acima) entra igualmente no numerador e denominador — sem ela (`extra_hp = 0`), a fórmula volta a ser exatamente `hp_current / hp_max`.
 
 Interpolação linear componente-a-componente em RGB (não em HSL — HSL passaria por tons esverdeados/acinzentados indesejados no meio do caminho). Cores-base (`RED`/`YELLOW`/`GREEN`) ficam em `shared/constants/colors.ts`, ajustáveis num único lugar. `percent = 0` → vermelho puro; `50` → amarelo puro; `100` → verde puro; valores entre os pontos são mistura proporcional linear.
 
@@ -64,8 +66,8 @@ Mesmo padrão do cross-poker: `libs/realtime.ts` (pub/sub em memória, singleton
 
 ### Redação de privacidade — uma única fonte, dois payloads
 `GET /api/tables/[code]` é a **única** rota de snapshot. Ela resolve o papel via cookie e decide o formato de resposta:
-- **Mestre**: inclui `hp_current`, `hp_max`, `stats` de cada personagem.
-- **Exibição** (sem cookie de Mestre válido): omite completamente `hp_current`/`hp_max`/`stats`; inclui só `hp_color` (resultado já calculado de `HealthColor.ts`, no servidor) e `status_effects`.
+- **Mestre**: inclui `hp_current`, `hp_max` de cada personagem.
+- **Exibição** (sem cookie de Mestre válido): omite completamente `hp_current`/`hp_max`; inclui só `hp_color` (resultado já calculado de `HealthColor.ts`, no servidor) e `status_effects`.
 Nunca crie uma segunda rota de snapshot com lógica de redação própria — isso divergiria da fonte de verdade (mesmo princípio do `IGameState` do cross-poker).
 
 ### Organização de módulos (`resources/`)
@@ -88,7 +90,7 @@ resources/
 
 - `tables`: id (serial), code (varchar único, curto), master_key_hash (varchar), name (varchar, opcional), status (`active|archived`), created_at.
 - `table_zones` (**desde a etapa 8**): id (serial), table_id (fk), position (integer, ordem 0-based esquerda→direita), created_at. Toda Mesa nasce com 1 (`position: 0`). Teto de 6 por Mesa.
-- `characters`: id (serial), table_id (fk), name (varchar), image_url (varchar, nullable), zone_id (fk → table_zones.id, **substituiu position_x/position_y na etapa 8** — não existem mais no schema), hp_current (int), hp_max (int), stats (jsonb, default `{}`), status_effects (jsonb, default `[]`), visible (bool, default true), created_at, updated_at.
+- `characters`: id (serial), table_id (fk), name (varchar), image_url (varchar, nullable), zone_id (fk → table_zones.id, **substituiu position_x/position_y na etapa 8** — não existem mais no schema), hp_current (int), hp_max (int), status_effects (jsonb, default `[]`), visible (bool, default true), has_mana (bool, default false), mana_current (int, default 0), mana_max (int, default 0), created_at, updated_at. **`stats` (jsonb) existiu até a remoção documentada no fim da seção 6 — não existe mais no schema.**
 
 ### Formato de API
 Segue `api-response-format.md` (envelope `{ success, message, data }`, chaves snake_case) e `resources-services.md`.
@@ -363,3 +365,36 @@ A pedido do usuário: fichas em formato de carta (maiores que o token circular a
 **Verificação final (orquestrador)**: `npx tsc --noEmit` limpo (zero erros, projeto inteiro) e `npm run lint` com exatamente os mesmos 4 warnings pré-existentes — confirmado depois dos dois agentes paralelos terminarem, sem depender só do autorrelato de cada um. Cada agente também validou sozinho via Playwright real (técnica de destravar o Chromium headless sem `sudo` já documentada nas etapas 7/8/9) contra os containers já rodando: carta do Mestre com condições+mana visíveis e ações de gastar/restaurar mana refletindo na contagem de cristais; carta de Exibição com `?view=display` confirmado sem `hp_current`/`hp_max`/`stats` mas com mana/condições, anel de vida na cor certa, e animação de estilhaçar ao gastar mana via SSE. Dados de teste residuais no Postgres local (mesas `7T7EEJ`, `26VQBT`, `VJPYR5`, `VT22DM`) não removidos — mesmo padrão de "resíduo aceito" já documentado nas etapas anteriores.
 
 **V3 (cartas/estados/mana) concluído e verificado.**
+
+### Remoção do campo Atributos (`stats`) — agente único, a pedido do usuário
+
+A pedido do usuário: "Retire dos personagens toda a parte de atributos pois ela não está sendo utilizada" — o campo livre de atributos numéricos (`stats`, seção "Atributos" do `CharacterEditPanel.tsx`) nunca foi consumido por nenhuma outra parte do produto (não influenciava o anel de vida, não aparecia na Exibição, não tinha nenhuma lógica de jogo associada), então foi removido por completo em vez de só escondido.
+
+Mexeu em peça compartilhada (schema, `Character.ts`) — agente único, sem paralelismo (ver seção 4).
+
+- `db/schema/characters.ts`: coluna `stats` (jsonb) removida. Migration `0003_narrow_wrecking_crew.sql` gerada via `npx drizzle-kit generate` (rodou não-interativo desta vez — só travava em rename-detection, que não se aplica a uma coluna dropada) e aplicada no Postgres local via `psql` (`ALTER TABLE characters DROP COLUMN stats`), mesmo padrão de aplicação manual das migrations 0001/0002.
+- `resources/character/models/Character.ts`: `stats: Record<string, number>` removido de `ICharacterMaster` (nunca existiu em `ICharacterDisplay`).
+- `resources/character/services/{createCharacter,updateCharacter}.ts`: campo `stats?` removido dos payloads.
+- Rotas (`app/api/tables/[code]/characters/route.ts`, `.../[id]/route.ts`, `.../[id]/actions/route.ts`, `app/api/tables/[code]/route.ts`): leitura/escrita de `stats` removida de todos os pontos (`toCharacterMaster`, `POST`, `PATCH`, snapshot do Mestre em `GET /api/tables/[code]`).
+- `resources/character/components/CharacterEditPanel.tsx`: removida a seção "Atributos" inteira (lista de `{key, value}` editável, botão "Adicionar atributo", handlers `addStat`/`updateStat`/`removeStat`) e o campo `stats` de `ICharacterFormState`/`CHARACTER_FORM_DEFAULT_STATE`/`characterToFormState`/`characterFormStateToPayload`. Import `ActionIcon` removido (só era usado pelo botão de excluir linha de atributo).
+- Comentários que citavam `hp/stats` como par de "números de jogo proibidos na Exibição" (em `Character.ts`, `DisplayToken.tsx`, `ManaCrystals.tsx`, `exibicao/page.tsx`, `app/api/tables/[code]/route.ts`) atualizados para citar só `hp` — a regra de privacidade da seção 2 continua exatamente a mesma, só não menciona mais um campo que não existe.
+
+**Verificado**: `npx tsc --noEmit` e `npm run lint` limpos, exatamente os mesmos 4 warnings pré-existentes, zero erros novos. `grep -rn "\bstats\b"` no projeto inteiro (fora `node_modules`/`.next`) não retorna nenhuma ocorrência. Testado via `curl` contra os containers já rodando (`storyweaver-front`/`storyweaver-postgres`, ativos desde antes desta sessão): `POST /api/tables/[code]/characters` cria personagem normalmente, resposta sem campo `stats`.
+
+### Vida extra (`extra_hp`) — agente único, a pedido do usuário
+
+A pedido do usuário: qualquer ficha ganha um segundo "reservatório" de vida — vida extra —, separado da vida normal, que o Mestre pode adicionar/remover a qualquer momento. Dano é sempre abatido primeiro da vida extra; só o excedente (se sobrar) desconta da vida normal. A cor do anel/carta passa a considerar `hp_max + extra_hp` como máximo e `hp_current + extra_hp` como atual.
+
+Mexeu em peça compartilhada (schema, `HealthColor.ts`, `Character.ts`, rota de snapshot, rota de ações) — agente único, sem paralelismo (ver seção 4).
+
+- `db/schema/characters.ts`: coluna nova `extra_hp` (integer, default `0`, `NOT NULL`). Sem coluna de "máximo" própria — `extra_hp` entra igualmente no numerador e denominador da fórmula de cor, então o próprio valor atual já funciona como o teto que ele concede. Migration `0004_add_extra_hp.sql` gerada via `npx drizzle-kit generate` (rodou não-interativo desta vez — pura adição de coluna não aciona rename-detection) e aplicada no Postgres local via `psql` (`ALTER TABLE characters ADD COLUMN extra_hp integer DEFAULT 0 NOT NULL`), mesmo padrão de aplicação manual das migrations anteriores.
+- `resources/character/models/HealthColor.ts`: `healthColor`/`healthPercent` (esta última agora exportada) ganham um terceiro parâmetro opcional `extraHp = 0`. `effectiveMax = hpMax + extraHp`; `percent = (hpCurrent + extraHp) / effectiveMax * 100`, clampado 0–100 (nunca ultrapassa 100 porque `hp_current <= hp_max` sempre).
+- `resources/character/models/Character.ts`: `ICharacterMaster` ganha `extra_hp: number` — Mestre-only, mesma regra do `hp_current`/`hp_max` (NUNCA em `ICharacterDisplay`; a Exibição só vê o resultado já embutido em `hp_color`/`is_defeated`).
+- `is_defeated` (rota de snapshot, `MasterToken.tsx`) passou de `hp_current <= 0` para `hp_current + extra_hp <= 0` — vida extra conta como vida restante, inclusive podendo "reviver" visualmente um personagem que estava a 0 se o Mestre adicionar vida extra.
+- `POST .../characters/[id]/actions`: dois tipos novos, `extra-add` (soma, sem teto) e `extra-remove` (subtrai, nunca abaixo de 0). `damage` reescrito: `extraAbsorbed = min(extra_hp, amount)`, abate isso de `extra_hp`, e só `amount - extraAbsorbed` desconta de `hp_current` (clampado 0..hp_max, como antes). `heal` não toca em `extra_hp` (só cura vida normal). Payload do evento SSE `character-action` ganhou `extra_hp` (sempre presente, mesmo padrão de `mana_current`/`mana_max` — o canal já era compartilhado e já vazava `hp_current`/`hp_max` no payload cru desde a etapa 8/9, decisão aceita e documentada; a Exibição continua nunca lendo esses campos).
+- `CharacterEditPanel.tsx`: `NumberInput` "Vida extra" (min 0) logo abaixo do grupo Vida máxima/atual — edição direta, sem toggle (diferente de mana, vida extra está sempre disponível para qualquer personagem).
+- `CharacterActionsPanel.tsx`: nova seção "Vida Extra" espelhando Dano/Cura — dois `NumberInput`+`Button` ("Adicionar vida extra"/"Remover vida extra", ambos `color="green"`, o de remover em `variant="outline"` só para diferenciar visualmente o par). Barra de progresso/texto de vida no topo do painel agora usa `healthPercent`/`healthColor` com `extra_hp` embutido, e mostra um `+N` verde ao lado do `hp_current/hp_max` quando `extra_hp > 0`.
+- `MasterToken.tsx`: mesmo badge `+N` verde ao lado do texto de HP da carta; `PULSE_IS_NEGATIVE`/`PULSE_COLOR_CLASS` (popup flutuante de dano/cura/mana) ganham `extra-add`/`extra-remove` — **reusam a MESMA cor verde de `heal`** nos dois sentidos (adicionar E remover), a pedido explícito do usuário ("a mesma animação da de curar, porém com a cor verde").
+- `DisplayToken.tsx`/`exibicao/page.tsx`: `DisplayTokenActiveEffect.action` ganha `extra-add`/`extra-remove` — reusam o mesmo flash verde de `heal` (a condicional do componente já tratava qualquer ação não-`damage` como o caminho verde, então nenhuma mudança de lógica de cor foi necessária ali, só o tipo). Diferente de mana (que nunca dispara esse flash — o `ManaCrystals` anima sozinho a partir do snapshot), vida extra dispara o flash porque não há nenhum elemento equivalente ao `ManaCrystals` para ela na Exibição (o número é Mestre-only) — é o único feedback visual que o jogador tem de que algo mudou.
+
+**Testado via `curl` contra os containers já rodando** (`storyweaver-front`/`storyweaver-postgres`, ativos desde antes desta sessão): personagem criado com `hp 30/30, extra_hp 10`; `damage 5` → só `extra_hp` cai (10→5), `hp_current` intacto; `damage 12` → `extra_hp` zera (5→0) e o excedente (7) desconta de `hp_current` (30→23); `extra-add 20`/`extra-remove 15`/`extra-remove 100` (clamp em 0) todos corretos; payload de Exibição (`?view=display`, `grep`) confirmado sem `hp_current`/`hp_max`/`extra_hp`; `hp_color` bate com a fórmula nova (84.4% → `#66b547`, calculado à mão a partir do lerp YELLOW→GREEN); `is_defeated` vira `true` quando `hp_current + extra_hp` chega a 0, e volta a `false` só com `extra-add` (sem tocar `hp_current`) — confirma que vida extra sozinha já é suficiente pra "reviver" visualmente. Mesa de teste (`QCUECJ`) removida do Postgres local ao final (sem resíduo desta vez, diferente do padrão aceito em etapas anteriores). `npx tsc --noEmit` e `npm run lint` seguem limpos, exatamente os mesmos 4 warnings pré-existentes, zero erros novos.

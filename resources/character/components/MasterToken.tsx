@@ -32,7 +32,7 @@ const CLICK_DRAG_THRESHOLD_PX = 6;
 // evento para a animação sempre reiniciar do zero (ex.: duas ações
 // seguidas), mesmo padrão do `key={activeEffect.key}` da `DisplayToken`.
 export interface MasterTokenPulse {
-  type: 'damage' | 'heal' | 'mana-spend' | 'mana-restore';
+  type: 'damage' | 'heal' | 'mana-spend' | 'mana-restore' | 'extra-add' | 'extra-remove';
   amount: number;
   nonce: number;
 }
@@ -42,17 +42,24 @@ const PULSE_IS_NEGATIVE: Record<MasterTokenPulse['type'], boolean> = {
   heal: false,
   'mana-spend': true,
   'mana-restore': false,
+  'extra-add': false,
+  'extra-remove': true,
 };
 
 // Cor do texto do pulso — hp usa os tons vermelho/verde já existentes; mana
 // usa MANA_BLUE/MANA_BLUE_LIGHT (`shared/constants/colors.ts`) como classe
 // arbitrária, mesma técnica já usada em `ManaCrystals.tsx`, para diferenciar
-// visualmente um gasto/restauração de mana de um dano/cura de vida.
+// visualmente um gasto/restauração de mana de um dano/cura de vida. Vida
+// extra (`extra-add`/`extra-remove`) reusa o MESMO verde de `heal` nos dois
+// sentidos — a pedido do usuário, a animação de vida extra é a de cura, só
+// que sempre verde (adicionar ou remover).
 const PULSE_COLOR_CLASS: Record<MasterTokenPulse['type'], string> = {
   damage: 'text-[#e0564a]',
   heal: 'text-[#4fce7f]',
   'mana-spend': 'text-[#2e86c1]',
   'mana-restore': 'text-[#6fb7e8]',
+  'extra-add': 'text-[#4fce7f]',
+  'extra-remove': 'text-[#4fce7f]',
 };
 
 type MasterTokenProps = {
@@ -130,7 +137,10 @@ export function MasterToken({ character, onClick, pulse }: MasterTokenProps) {
   }
 
   const showImage = character.image_url && !imageFailed;
-  const isDefeated = character.hp_current <= 0;
+  // Mesma regra do `is_defeated` calculado no servidor para a Exibição —
+  // vida extra conta como vida ainda restante (ver
+  // `.claude/rules/table-concept.md` seção 2).
+  const isDefeated = character.hp_current + character.extra_hp <= 0;
   const hasStatusEffects = character.status_effects.length > 0;
 
   return (
@@ -181,6 +191,7 @@ export function MasterToken({ character, onClick, pulse }: MasterTokenProps) {
                 src={character.image_url ?? undefined}
                 alt={character.name}
                 onError={() => setImageFailed(true)}
+                draggable={false}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -217,12 +228,24 @@ export function MasterToken({ character, onClick, pulse }: MasterTokenProps) {
               {character.name}
             </Text>
 
-            <Text
-              size="sm"
-              className="text-parchment/55"
-            >
-              {`${character.hp_current}/${character.hp_max}`}
-            </Text>
+            <div className="flex items-center gap-1.5">
+              <Text
+                size="sm"
+                className="text-parchment/55"
+              >
+                {`${character.hp_current}/${character.hp_max}`}
+              </Text>
+
+              {character.extra_hp > 0 && (
+                <Text
+                  size="sm"
+                  fw={600}
+                  className="text-[#4fce7f]"
+                >
+                  {`+${character.extra_hp}`}
+                </Text>
+              )}
+            </div>
 
             {hasStatusEffects && (
               <div className="flex flex-wrap items-center gap-1.5">

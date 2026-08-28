@@ -24,7 +24,7 @@ interface TableDisplayPageProps {
 // ausência dessas props já faz o board não desenhar nenhum botão de gestão e
 // não escutar nenhum evento de drag). O servidor (`GET /api/tables/[code]`)
 // já filtrou os personagens `visible: false` e já redigiu
-// hp_current/hp_max/stats antes de responder — este componente só consome
+// hp_current/hp_max antes de responder — este componente só consome
 // `ICharacterDisplay[]`, formato que nem possui esses campos (ver
 // `.claude/rules/table-concept.md` seções 2 e 3).
 //
@@ -46,12 +46,13 @@ interface TableDisplayPageProps {
 // duração da animação.
 //
 // Fundação de mana: ações `'mana-spend'`/`'mana-restore'` NÃO disparam esse
-// efeito de shake/flash (que é exclusivo de `'damage'`/`'heal'`, ver
-// `DisplayTokenActiveEffect`) — a animação de "cristal se estilhaçando/
+// efeito de shake/flash — a animação de "cristal se estilhaçando/
 // brilhando" já acontece sozinha dentro de `ManaCrystals`, comparando
 // `mana_current` do snapshot anterior com o novo a cada refetch (disparado
 // pelo `refetch()` que o próprio `useTableStream` já chama antes de invocar
-// este callback). Nada a fazer aqui além de ignorar essas duas ações.
+// este callback). `'extra-add'`/`'extra-remove'` (vida extra) JÁ disparam
+// esse efeito, reusando o flash verde de `'heal'` — `extra_hp` nunca é
+// exposto como número aqui (ver `DisplayToken.tsx`), só o pulso visual.
 export default function TableDisplayPage({ params }: TableDisplayPageProps) {
   const { code } = use(params);
 
@@ -59,12 +60,12 @@ export default function TableDisplayPage({ params }: TableDisplayPageProps) {
   const effectKeyRef = useRef(0);
 
   function handleCharacterAction(action: UseTableStreamCharacterAction) {
-    if (action.action !== 'damage' && action.action !== 'heal') return;
+    if (action.action !== 'damage' && action.action !== 'heal' && action.action !== 'extra-add' && action.action !== 'extra-remove') return;
 
     // Narrowing acima não sobrevive dentro dos closures de `setActiveEffects`
     // abaixo (control-flow narrowing não atravessa fronteira de função) —
     // capturado numa const local só para o TypeScript propagar o tipo
-    // estreito ('damage' | 'heal') para dentro deles.
+    // estreito para dentro deles.
     const effectAction = action.action;
     const effectKey = ++effectKeyRef.current;
 

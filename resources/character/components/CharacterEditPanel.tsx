@@ -1,6 +1,6 @@
 'use client';
 
-import { ActionIcon, Avatar, Button, Chip, Divider, Group, NumberInput, Modal, Stack, Switch, TextInput } from '@mantine/core';
+import { Avatar, Button, Chip, Divider, Group, NumberInput, Modal, Stack, Switch, TextInput } from '@mantine/core';
 import { Icon } from '@iconify/react';
 import { EStatusEffect } from '../enums/StatusEffect';
 import { STATUS_EFFECT_VISUAL } from '../models/StatusEffectVisual';
@@ -20,18 +20,17 @@ const ALL_STATUS_EFFECTS = Object.values(EStatusEffect);
 // por isso este painel usa os componentes do Mantine diretamente, sem tema
 // custom (etapa 5 cuida da estética RPG).
 
-// Estado de formulário — `stats` fica como lista (não como `Record` direto do
-// model) só enquanto o usuário edita, para permitir linhas com chave
-// temporariamente vazia/duplicada sem perder o valor digitado. `status_effects`
-// já é `EStatusEffect[]` direto — é um conjunto fechado de 4 valores (seletor
-// fixo via `Chip.Group`), não precisa de representação intermediária. A
-// conversão para o payload da API acontece em `characterFormStateToPayload`.
+// Estado de formulário — `status_effects` já é `EStatusEffect[]` direto — é
+// um conjunto fechado de 4 valores (seletor fixo via `Chip.Group`), não
+// precisa de representação intermediária. A conversão para o payload da API
+// acontece em `characterFormStateToPayload`.
 export interface ICharacterFormState {
   name: string;
   image_url: string;
   hp_current: number;
   hp_max: number;
-  stats: { key: string; value: number }[];
+  // Vida extra — bônus separado da vida normal (ver `db/schema/characters.ts`).
+  extra_hp: number;
   status_effects: EStatusEffect[];
   visible: boolean;
   has_mana: boolean;
@@ -44,7 +43,7 @@ export const CHARACTER_FORM_DEFAULT_STATE: ICharacterFormState = {
   image_url: '',
   hp_current: 0,
   hp_max: 1,
-  stats: [],
+  extra_hp: 0,
   status_effects: [],
   visible: true,
   has_mana: false,
@@ -58,7 +57,7 @@ export function characterToFormState(character: ICharacterMaster): ICharacterFor
     image_url: character.image_url ?? '',
     hp_current: character.hp_current,
     hp_max: character.hp_max,
-    stats: Object.entries(character.stats).map(([key, value]) => ({ key, value })),
+    extra_hp: character.extra_hp,
     status_effects: [...character.status_effects],
     visible: character.visible,
     has_mana: character.has_mana,
@@ -68,20 +67,12 @@ export function characterToFormState(character: ICharacterMaster): ICharacterFor
 }
 
 export function characterFormStateToPayload(state: ICharacterFormState): CreateCharacterServicePayload {
-  const stats = state.stats.reduce<Record<string, number>>((acc, { key, value }) => {
-    const trimmedKey = key.trim();
-
-    if (trimmedKey) acc[trimmedKey] = value;
-
-    return acc;
-  }, {});
-
   return {
     name: state.name.trim(),
     image_url: state.image_url.trim() || null,
     hp_current: state.hp_current,
     hp_max: state.hp_max,
-    stats,
+    extra_hp: state.extra_hp,
     status_effects: state.status_effects,
     visible: state.visible,
     has_mana: state.has_mana,
@@ -119,18 +110,6 @@ export function CharacterEditPanel({
 }: CharacterEditPanelProps) {
   function updateField<K extends keyof ICharacterFormState>(key: K, value: ICharacterFormState[K]) {
     onChange({ ...state, [key]: value });
-  }
-
-  function addStat() {
-    updateField('stats', [...state.stats, { key: '', value: 0 }]);
-  }
-
-  function updateStat(index: number, patch: Partial<{ key: string; value: number }>) {
-    updateField('stats', state.stats.map((stat, i) => (i === index ? { ...stat, ...patch } : stat)));
-  }
-
-  function removeStat(index: number) {
-    updateField('stats', state.stats.filter((_, i) => i !== index));
   }
 
   return (
@@ -177,19 +156,34 @@ export function CharacterEditPanel({
 
         <Group grow>
           <NumberInput
+            label="Vida máxima"
+            min={1}
+            value={state.hp_max}
+            onChange={(value) => {
+              const hp_max = toNumber(value);
+
+              // Ajustar a vida máxima também iguala a vida atual a ela —
+              // facilita preencher a ficha sem precisar repetir o número
+              // (a pedido do usuário).
+              onChange({ ...state, hp_max, hp_current: hp_max });
+            }}
+          />
+
+          <NumberInput
             label="Vida atual"
             min={0}
             value={state.hp_current}
             onChange={(value) => updateField('hp_current', toNumber(value))}
           />
-
-          <NumberInput
-            label="Vida máxima"
-            min={1}
-            value={state.hp_max}
-            onChange={(value) => updateField('hp_max', toNumber(value))}
-          />
         </Group>
+
+        <NumberInput
+          label="Vida extra"
+          description="Bônus separado da vida normal — dano é sempre abatido daqui primeiro."
+          min={0}
+          value={state.extra_hp}
+          onChange={(value) => updateField('extra_hp', toNumber(value))}
+        />
 
         <Switch
           label="Visível na Tela de Exibição"
@@ -197,50 +191,6 @@ export function CharacterEditPanel({
           checked={state.visible}
           onChange={(event) => updateField('visible', event.currentTarget.checked)}
         />
-
-        <Divider label="Atributos" labelPosition="left" />
-
-        <Stack gap="xs">
-          {state.stats.map((stat, index) => (
-            <Group
-              key={index}
-              gap="xs"
-              wrap="nowrap"
-            >
-              <TextInput
-                placeholder="Ex: mana"
-                value={stat.key}
-                onChange={(event) => updateStat(index, { key: event.currentTarget.value })}
-                className="flex-1"
-              />
-
-              <NumberInput
-                placeholder="0"
-                value={stat.value}
-                onChange={(value) => updateStat(index, { value: toNumber(value) })}
-                className="w-[100px]"
-              />
-
-              <ActionIcon
-                variant="subtle"
-                color="red"
-                onClick={() => removeStat(index)}
-              >
-                <Icon icon="lucide:trash-2" />
-              </ActionIcon>
-            </Group>
-          ))}
-
-          <Button
-            variant="subtle"
-            size="xs"
-            leftSection={<Icon icon="lucide:plus" />}
-            onClick={addStat}
-            className="self-start"
-          >
-            Adicionar atributo
-          </Button>
-        </Stack>
 
         <Divider label="Condições" labelPosition="left" />
 

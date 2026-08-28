@@ -23,15 +23,20 @@ function lerpColor(from: string, to: string, t: number): [number, number, number
   return [lerpChannel(r1, r2, t), lerpChannel(g1, g2, t), lerpChannel(b1, b2, t)];
 }
 
-// `hp_max <= 0` é tratado como 0% (vermelho puro) em vez de lançar/gerar NaN.
-function healthPercent(hpCurrent: number, hpMax: number): number {
-  if (hpMax <= 0) return 0;
+// Vida extra (`extra_hp`, ver `.claude/rules/table-concept.md` seção 2) entra
+// igualmente no numerador e no denominador: máximo = hp_max + extra_hp, atual
+// = hp_current + extra_hp. `(hp_max + extra_hp) <= 0` é tratado como 0%
+// (vermelho puro) em vez de lançar/gerar NaN.
+export function healthPercent(hpCurrent: number, hpMax: number, extraHp = 0): number {
+  const effectiveMax = hpMax + extraHp;
 
-  return clamp((hpCurrent / hpMax) * 100, 0, 100);
+  if (effectiveMax <= 0) return 0;
+
+  return clamp(((hpCurrent + extraHp) / effectiveMax) * 100, 0, 100);
 }
 
-export function healthColor(hpCurrent: number, hpMax: number): string {
-  const percent = healthPercent(hpCurrent, hpMax);
+export function healthColor(hpCurrent: number, hpMax: number, extraHp = 0): string {
+  const percent = healthPercent(hpCurrent, hpMax, extraHp);
 
   const [r, g, b] = percent <= 50
     ? lerpColor(RED, YELLOW, percent / 50)

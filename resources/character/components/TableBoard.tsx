@@ -2,6 +2,7 @@
 
 import { cn } from '@/src/libs/utils';
 import { useCallback, useRef, useState } from 'react';
+import { Icon } from '@iconify/react';
 
 // Qualquer zona (ITableZone) satisfaz este shape estruturalmente — o board só
 // precisa do `id` para desenhar o container e resolver o drop.
@@ -36,6 +37,10 @@ export type TableBoardProps<TZone extends ITableBoardZone, TChar extends ITableB
   // Presença = tokens arrastáveis entre zonas (Tela do Mestre); ausência =
   // board só leitura, sem nenhum listener de drag (Tela de Exibição).
   onDropCharacter?: (characterId: number, zoneId: number) => void;
+  // Presença = desenha uma lixeira fixa no canto inferior esquerdo da tela;
+  // soltar um personagem sobre ela chama este callback em vez de
+  // `onDropCharacter` (a Tela de Exibição nunca passa isso — é só leitura).
+  onDeleteCharacter?: (characterId: number) => void;
   className?: string;
 };
 
@@ -64,6 +69,13 @@ export type TableBoardProps<TZone extends ITableBoardZone, TChar extends ITableB
 // `document.elementFromPoint` para achar qual zona está sob o ponteiro
 // (`data-zone-id` em cada container) e chamamos `onDropCharacter` só então —
 // nunca durante o `pointermove`, para não floodar o PATCH de zone_id.
+//
+// Lixeira (`onDeleteCharacter`): mesma técnica de `data-*` + `elementFromPoint`,
+// checada em `endDrag` antes da checagem de zona. Fica fixa no canto inferior
+// esquerdo da tela (`data-trash-zone`), só desenhada quando o consumidor passa
+// `onDeleteCharacter` (só a Tela do Mestre — a Exibição é só leitura). Quem
+// consome decide o que fazer com o id solto ali (aqui, abrir o modal de
+// confirmação já existente, mesmo fluxo do botão "Remover" do painel de edição).
 export function TableBoard<TZone extends ITableBoardZone, TChar extends ITableBoardCharacter>({
   zones,
   characters,
@@ -72,11 +84,13 @@ export function TableBoard<TZone extends ITableBoardZone, TChar extends ITableBo
   trailing,
   emptyZoneText,
   onDropCharacter,
+  onDeleteCharacter,
   className,
 }: TableBoardProps<TZone, TChar>) {
   const draggingIdRef = useRef<number | null>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
+  const [isOverTrash, setIsOverTrash] = useState(false);
 
   const charactersByZone = useCallback((zoneId: number) => characters.filter((c) => c.zone_id === zoneId), [characters]);
 
@@ -95,6 +109,12 @@ export function TableBoard<TZone extends ITableBoardZone, TChar extends ITableBo
     if (draggingIdRef.current === null) return;
 
     setPointer({ x: event.clientX, y: event.clientY });
+
+    if (onDeleteCharacter) {
+      const overTrash = !!document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-trash-zone]');
+
+      setIsOverTrash(overTrash);
+    }
   }
 
   function endDrag(event: React.PointerEvent<HTMLDivElement>) {
@@ -103,11 +123,20 @@ export function TableBoard<TZone extends ITableBoardZone, TChar extends ITableBo
     draggingIdRef.current = null;
     setDraggingId(null);
     setPointer(null);
+    setIsOverTrash(false);
 
     if (characterId === null) return;
 
-    const dropTarget = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-zone-id]');
-    const zoneIdAttr = dropTarget?.getAttribute('data-zone-id');
+    const dropTarget = document.elementFromPoint(event.clientX, event.clientY);
+
+    if (onDeleteCharacter && dropTarget?.closest('[data-trash-zone]')) {
+      onDeleteCharacter(characterId);
+
+      return;
+    }
+
+    const zoneTarget = dropTarget?.closest('[data-zone-id]');
+    const zoneIdAttr = zoneTarget?.getAttribute('data-zone-id');
 
     if (!zoneIdAttr) return; // soltou fora de qualquer zona — mantém no lugar
 
@@ -186,6 +215,24 @@ export function TableBoard<TZone extends ITableBoardZone, TChar extends ITableBo
           style={{ left: pointer.x, top: pointer.y }}
         >
           {renderToken(draggingCharacter)}
+        </div>
+      ) : null}
+
+      {onDeleteCharacter ? (
+        <div
+          data-trash-zone
+          className={cn(
+            'fixed bottom-6 left-6 z-[1000] flex h-16 w-16 items-center justify-center rounded-full border-2 transition-all duration-200',
+            isOverTrash
+              ? 'scale-110 border-secondary-300 bg-secondary-600/90 text-parchment'
+              : 'border-secondary-500/50 bg-black/40 text-secondary-300',
+          )}
+        >
+          <Icon
+            icon="lucide:trash-2"
+            width={26}
+            height={26}
+          />
         </div>
       ) : null}
     </div>

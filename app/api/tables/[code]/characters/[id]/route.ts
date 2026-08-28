@@ -16,7 +16,7 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     zone_id: c.zone_id,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
-    stats: c.stats as Record<string, number>,
+    extra_hp: c.extra_hp,
     status_effects: c.status_effects as EStatusEffect[],
     visible: c.visible,
     has_mana: c.has_mana,
@@ -72,7 +72,7 @@ function invalidZone() {
   return NextResponse.json({ success: false, message: { 'pt-br': 'Divisão inválida.', 'es-mx': 'División inválida.', 'en-us': 'Invalid zone.' }, data: null }, { status: 422 });
 }
 
-// Atualiza um personagem (nome, imagem, posição, hp, stats, status_effects,
+// Atualiza um personagem (nome, imagem, posição, hp, status_effects,
 // visible). Todos os campos do body são opcionais — só os presentes são
 // alterados. Só o Mestre pode.
 export async function PATCH(request: Request, { params }: { params: Promise<{ code: string; id: string }> }) {
@@ -113,7 +113,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
 
     if (typeof body.hp_current === 'number') updates.hp_current = body.hp_current;
     if (typeof body.hp_max === 'number') updates.hp_max = body.hp_max;
-    if (body.stats && typeof body.stats === 'object') updates.stats = body.stats;
+    if (typeof body.extra_hp === 'number') updates.extra_hp = Math.max(body.extra_hp, 0);
     if (Array.isArray(body.status_effects)) updates.status_effects = sanitizeStatusEffects(body.status_effects);
     if (typeof body.visible === 'boolean') updates.visible = body.visible;
     if (typeof body.has_mana === 'boolean') updates.has_mana = body.has_mana;

@@ -60,7 +60,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
         zone_id: c.zone_id,
         hp_current: c.hp_current,
         hp_max: c.hp_max,
-        stats: c.stats as Record<string, number>,
+        extra_hp: c.extra_hp,
         status_effects: c.status_effects as EStatusEffect[],
         visible: c.visible,
         // Mana aparece nos dois formatos (exceção deliberada, ver comentário
@@ -79,18 +79,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
           name: c.name,
           image_url: c.image_url,
           zone_id: c.zone_id,
-          // hp_current/hp_max/stats NUNCA entram aqui, nem ocultos — só o
-          // resultado já calculado de HealthColor.ts. Ver regra de produto em
+          // hp_current/hp_max/extra_hp NUNCA entram aqui, nem ocultos — só o
+          // resultado já calculado de HealthColor.ts (que já incorpora
+          // extra_hp no numerador/denominador). Ver regra de produto em
           // table-concept.md seção 2.
-          hp_color: healthColor(c.hp_current, c.hp_max),
+          hp_color: healthColor(c.hp_current, c.hp_max, c.extra_hp),
           status_effects: c.status_effects as EStatusEffect[],
-          // Derivado (hp_current <= 0), não é o número bruto — ver comentário
-          // em `resources/character/models/Character.ts`.
-          is_defeated: c.hp_current <= 0,
+          // Derivado (hp_current + extra_hp <= 0), não é o número bruto — ver
+          // comentário em `resources/character/models/Character.ts`.
+          is_defeated: c.hp_current + c.extra_hp <= 0,
           // EXCEÇÃO DELIBERADA: mana é permitida como número cru também na
           // Exibição (decisão registrada em
-          // `resources/character/models/Character.ts`) — hp/stats continuam
-          // proibidos acima desta linha.
+          // `resources/character/models/Character.ts`) — hp continua
+          // proibido acima desta linha.
           has_mana: c.has_mana,
           mana_current: c.mana_current,
           mana_max: c.mana_max,

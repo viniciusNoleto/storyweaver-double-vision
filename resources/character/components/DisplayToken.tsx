@@ -48,9 +48,13 @@ const OUTER_TRIM_SPREAD = INNER_TRIM_SPREAD + OUTER_TRIM_WIDTH; // = 26
 // puramente visual, sem número (ver `.claude/rules/table-concept.md` seção 2).
 // Ações de mana (`mana-spend`/`mana-restore`) não passam por aqui — o
 // `ManaCrystals` já anima sozinho a partir do snapshot (`mana_current`), ver
-// comentário em `app/mesa/[code]/exibicao/page.tsx`.
+// comentário em `app/mesa/[code]/exibicao/page.tsx`. Vida extra
+// (`extra-add`/`extra-remove`) PASSA por aqui — `extra_hp` nunca é exposto
+// como número na Exibição (Mestre-only, mesma regra do hp), mas o jogador
+// ainda precisa de algum feedback visual; reusa o mesmo flash verde de
+// `heal` nos dois sentidos (a pedido do usuário), sem nunca vazar o valor.
 export interface DisplayTokenActiveEffect {
-  action: 'damage' | 'heal';
+  action: 'damage' | 'heal' | 'extra-add' | 'extra-remove';
   key: number;
 }
 
@@ -60,13 +64,13 @@ export interface DisplayTokenProps {
 }
 
 // Ficha somente leitura da Tela de Exibição. `ICharacterDisplay` nem possui
-// hp_current/hp_max/stats (ver `resources/character/models/Character.ts`),
+// hp_current/hp_max (ver `resources/character/models/Character.ts`),
 // então este componente NUNCA pode renderizar/logar um número de jogo — só
 // nome, imagem, o anel de cor (`hp_color`, já calculado no servidor via
 // `HealthColor.ts`), `is_defeated` (booleano derivado, seguro),
 // `status_effects` (slugs sem número, via `StatusEffectBadge`) e
 // `has_mana`/`mana_current`/`mana_max` (exceção deliberada documentada em
-// `Character.ts` — mana É permitido cru na Exibição, ao contrário de hp/stats).
+// `Character.ts` — mana É permitido cru na Exibição, ao contrário de hp).
 // Ver `.claude/rules/table-concept.md` seção 2.
 //
 // Estrutura da carta (de cima pra baixo, dentro do retângulo com moldura):
@@ -121,6 +125,7 @@ export function DisplayToken({ character, activeEffect }: DisplayTokenProps) {
               <img
                 src={character.image_url}
                 alt={character.name}
+                draggable={false}
                 className="h-full w-full object-cover"
               />
             ) : (

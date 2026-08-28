@@ -12,13 +12,15 @@ export const characters = pgTable('characters', {
   zone_id: integer('zone_id').notNull().references(() => tableZones.id),
   hp_current: integer('hp_current').notNull().default(0),
   hp_max: integer('hp_max').notNull().default(1),
-  // Free-form extra numeric attributes (defesa, etc). Mestre-only — never
-  // sent in the Exibição payload. See .claude/rules/table-concept.md section 3.
-  // Note: mana is NOT stored here — it has its own dedicated columns below
-  // (has_mana/mana_current/mana_max) because, unlike other stats, mana is an
-  // explicit exception allowed on the Exibição payload too (see
-  // resources/character/models/Character.ts).
-  stats: jsonb('stats').notNull().default({}),
+  // Vida extra — pontos de vida "bônus" separados da vida normal, aplicados
+  // pelo Mestre (a pedido do usuário). Dano é sempre abatido daqui primeiro,
+  // só sobrando para hp_current quando extra_hp chega a 0. Sem coluna de
+  // "máximo" própria: extra_hp entra tanto no numerador quanto no
+  // denominador da fórmula de cor da carta (`HealthColor.ts`), então o
+  // próprio valor atual já funciona como o "teto" que ele mesmo concede.
+  // Mestre-only, nunca aparece em `ICharacterDisplay` — mesma regra do hp
+  // normal (ver `.claude/rules/table-concept.md` seção 2).
+  extra_hp: integer('extra_hp').notNull().default(0),
   // Array of EStatusEffect string slugs (see
   // resources/character/enums/StatusEffect.ts) — fixed set of 4 states
   // (atordoado/envenenado/preso/sangrando), each with its own icon/animation
@@ -30,7 +32,7 @@ export const characters = pgTable('characters', {
   // Mana — DELIBERATE exception to the "no game numbers on Exibição" rule
   // (decided with the user in this session): has_mana/mana_current/mana_max
   // are sent as raw numbers in BOTH ICharacterMaster and ICharacterDisplay.
-  // Only hp/stats stay Mestre-only. See detailed comment in
+  // Only hp stays Mestre-only. See detailed comment in
   // resources/character/models/Character.ts.
   has_mana: boolean('has_mana').notNull().default(false),
   mana_current: integer('mana_current').notNull().default(0),

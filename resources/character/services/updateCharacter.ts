@@ -9,7 +9,9 @@ export type UpdateCharacterServicePayload = {
   zone_id?: number;
   hp_current?: number;
   hp_max?: number;
-  stats?: Record<string, number>;
+  // Vida extra — bônus separado da vida normal (ver
+  // `db/schema/characters.ts`). Nunca vai abaixo de 0.
+  extra_hp?: number;
   status_effects?: EStatusEffect[];
   visible?: boolean;
   // Mana — se `mana_max` e/ou `mana_current` forem enviados, a rota clampa

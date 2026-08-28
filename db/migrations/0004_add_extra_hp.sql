@@ -1,0 +1,1 @@
+ALTER TABLE "characters" ADD COLUMN "extra_hp" integer DEFAULT 0 NOT NULL;

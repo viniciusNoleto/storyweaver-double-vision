@@ -14,7 +14,7 @@ export interface ManaCrystalsProps {
 
 // Peça compartilhada (ver `.claude/rules/table-concept.md` seção 4) — usada
 // tanto pela Tela do Mestre quanto pela Tela de Exibição, já que mana (ao
-// contrário de hp/stats) aparece nos DOIS papéis (ver a exceção documentada em
+// contrário de hp) aparece nos DOIS papéis (ver a exceção documentada em
 // `resources/character/models/Character.ts`).
 //
 // AUTOCONTIDO — nenhum consumidor precisa passar prop extra de evento para a

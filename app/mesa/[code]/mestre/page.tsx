@@ -3,7 +3,7 @@
 import { use, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
-import { ActionIcon, Button, Loader, Modal, Text } from '@mantine/core';
+import { ActionIcon, Button, Group, Loader, Modal, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { Icon } from '@iconify/react';
 import { useTableStream, UseTableStreamCharacterAction } from '@/resources/table/hooks/useTableStream';
@@ -16,6 +16,7 @@ import { MasterToken, MasterTokenPulse } from '@/resources/character/components/
 import { CharacterActionsPanel, useApplyCharacterActionLogicData } from '@/resources/character/components/CharacterActionsPanel';
 import { characterToFormState } from '@/resources/character/components/CharacterEditPanel';
 import { useCreateCharacterLogicData, CreateCharacterLogicComponent } from '@/resources/character/logics/CreateCharacter';
+import { useCreateNpcLogicData, CreateNpcLogicComponent } from '@/resources/character/logics/CreateNpc';
 import { useUpdateCharacterLogicData, UpdateCharacterLogicComponent } from '@/resources/character/logics/UpdateCharacter';
 import { useDeleteCharacterLogicData, DeleteCharacterLogicComponent } from '@/resources/character/logics/DeleteCharacter';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
@@ -99,6 +100,7 @@ export default function MestrePage({
   }, []);
 
   const [creating, setCreating] = useState(false);
+  const [creatingNpc, setCreatingNpc] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<ICharacterMaster | null>(null);
   const [deletingCharacter, setDeletingCharacter] = useState<ICharacterMaster | null>(null);
   const [actionsCharacterId, setActionsCharacterId] = useState<number | null>(null);
@@ -109,6 +111,14 @@ export default function MestrePage({
     onSuccess: () => {
       createCharacterLogicData.createCharacterReset();
       setCreating(false);
+    },
+  });
+
+  const createNpcLogicData = useCreateNpcLogicData({
+    code,
+    onSuccess: () => {
+      createNpcLogicData.createNpcReset();
+      setCreatingNpc(false);
     },
   });
 
@@ -178,6 +188,11 @@ export default function MestrePage({
   function openCreate() {
     createCharacterLogicData.createCharacterReset();
     setCreating(true);
+  }
+
+  function openCreateNpc() {
+    createNpcLogicData.createNpcReset();
+    setCreatingNpc(true);
   }
 
   function openEdit(character: ICharacterMaster) {
@@ -290,15 +305,28 @@ export default function MestrePage({
           </Text>
         </div>
 
-        <Button
-          leftSection={(
-            <Icon icon="lucide:plus" />
-          )}
-          onClick={openCreate}
-          className="uppercase tracking-[0.06em]"
-        >
-          Novo personagem
-        </Button>
+        <Group gap="sm">
+          <Button
+            variant="outline"
+            leftSection={(
+              <Icon icon="lucide:ghost" />
+            )}
+            onClick={openCreateNpc}
+            className="uppercase tracking-[0.06em]"
+          >
+            Novo NPC
+          </Button>
+
+          <Button
+            leftSection={(
+              <Icon icon="lucide:plus" />
+            )}
+            onClick={openCreate}
+            className="uppercase tracking-[0.06em]"
+          >
+            Novo personagem
+          </Button>
+        </Group>
       </header>
 
       <div className="relative flex flex-1 bg-board p-3">
@@ -352,6 +380,11 @@ export default function MestrePage({
           )}
           emptyZoneText="Nenhuma ficha aqui"
           onDropCharacter={(characterId, zoneId) => moveCharacterMutation.mutate({ id: characterId, zone_id: zoneId })}
+          onDeleteCharacter={(characterId) => {
+            const character = characters.find((item) => item.id === characterId);
+
+            if (character) setDeletingCharacter(character);
+          }}
           className="w-full"
         />
       </div>
@@ -368,6 +401,12 @@ export default function MestrePage({
         logicData={createCharacterLogicData}
         opened={creating}
         onCancel={() => setCreating(false)}
+      />
+
+      <CreateNpcLogicComponent
+        logicData={createNpcLogicData}
+        opened={creatingNpc}
+        onCancel={() => setCreatingNpc(false)}
       />
 
       <UpdateCharacterLogicComponent

@@ -6,9 +6,9 @@ import type { EStatusEffect } from '../enums/StatusEffect';
 // `GET /api/tables/[code]` é a única rota de snapshot e decide, no servidor,
 // qual formato devolver por personagem, a partir do papel resolvido via cookie
 // (`libs/tableAuth.ts`):
-// - Mestre → `ICharacterMaster` (números reais: hp_current/hp_max/stats).
+// - Mestre → `ICharacterMaster` (números reais: hp_current/hp_max).
 // - Exibição (sem cookie de Mestre válido) → `ICharacterDisplay` (hp_color já
-//   calculado no servidor via `HealthColor.ts`; NUNCA hp_current/hp_max/stats).
+//   calculado no servidor via `HealthColor.ts`; NUNCA hp_current/hp_max).
 //
 // Decisão: duas interfaces nomeadas, sem união discriminada. Não existe um campo
 // "view"/"kind" no payload da API — o consumidor (Tela do Mestre vs. Tela de
@@ -23,7 +23,7 @@ interface ICharacterBase {
   image_url: string | null;
   // Divisão/zona do tabuleiro em que o personagem está (substitui o antigo
   // position_x/position_y de posicionamento livre). Seguro em ambos os
-  // formatos — não é um número de jogo (hp/stats), é só a organização visual
+  // formatos — não é um número de jogo (hp), é só a organização visual
   // das fichas. Ver `.claude/rules/table-concept.md`.
   zone_id: number;
   // Estados fixos (atordoado/envenenado/preso/sangrando — ver
@@ -38,14 +38,14 @@ interface ICharacterBase {
 
 // Mana — EXCEÇÃO DELIBERADA à regra geral de "nenhum número de jogo na
 // Exibição" (seção 2 de `.claude/rules/table-concept.md`). Decisão tomada
-// com o usuário nesta sessão: ao contrário de hp_current/hp_max/stats (que
+// com o usuário nesta sessão: ao contrário de hp_current/hp_max (que
 // continuam PROIBIDOS na Exibição, sem exceção), mana é pensada para ser
 // vista pelos jogadores no telão — os cristais de mana
 // (`ManaCrystals.tsx`) são um elemento público da ficha, não uma informação
 // que o Mestre precisa esconder. Por isso `has_mana`/`mana_current`/
 // `mana_max` aparecem como números CRUS nos DOIS formatos abaixo
 // (`ICharacterMaster` e `ICharacterDisplay`), diferente de `is_defeated`
-// (que é derivado) e diferente de hp/stats (que nunca aparecem). Não
+// (que é derivado) e diferente de hp (que nunca aparece). Não
 // confunda esta exceção com a regra geral — ela vale SÓ para estes 3 campos.
 interface ICharacterMana {
   has_mana: boolean;
@@ -57,11 +57,15 @@ interface ICharacterMana {
 export interface ICharacterMaster extends ICharacterBase, ICharacterMana {
   hp_current: number;
   hp_max: number;
-  stats: Record<string, number>;
+  // Vida extra — bônus separado da vida normal (ver comentário em
+  // `db/schema/characters.ts`). Dano é sempre abatido daqui primeiro. Assim
+  // como hp_current/hp_max, NUNCA aparece em `ICharacterDisplay` — só entra
+  // (já embutido) no `hp_color`/`is_defeated` calculados no servidor.
+  extra_hp: number;
   visible: boolean;
 }
 
-// Visão de Exibição — NUNCA inclua hp_current/hp_max/stats aqui, nem em campos
+// Visão de Exibição — NUNCA inclua hp_current/hp_max aqui, nem em campos
 // ocultos/data-*/comentários (ver regra de produto em table-concept.md seção 2).
 // Personagens com `visible: false` simplesmente não aparecem nesta lista — por
 // isso não há campo `visible` neste formato. `has_mana`/`mana_current`/

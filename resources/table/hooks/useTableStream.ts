@@ -27,7 +27,7 @@ import { getTableService, GET_TABLE_KEY, GetTableServiceResponse } from '../serv
 // nada mantém o comportamento de sempre (só refetch a cada `state-changed`).
 export type UseTableStreamCharacterAction = {
   character_id: number;
-  action: 'damage' | 'heal' | 'mana-spend' | 'mana-restore';
+  action: 'damage' | 'heal' | 'mana-spend' | 'mana-restore' | 'extra-add' | 'extra-remove';
   amount: number;
   hp_current: number;
   hp_max: number;
@@ -36,6 +36,7 @@ export type UseTableStreamCharacterAction = {
   // `app/api/tables/[code]/characters/[id]/actions/route.ts`.
   mana_current: number;
   mana_max: number;
+  extra_hp: number;
 };
 
 export function useTableStream(code: string, options?: { forceDisplay?: boolean; onCharacterAction?: (data: UseTableStreamCharacterAction) => void }) {
