@@ -34,6 +34,7 @@ export interface IRacialAbility {
 export interface IClass {
   id: number;
   name: string;
+  icon: string | null;
   description: string;
   primary_attributes: string[];
   attribute_bonuses: IAttributeBonus[];
@@ -51,6 +52,7 @@ export interface IClass {
 export interface ISpecies {
   id: number;
   name: string;
+  icon: string | null;
   description: string;
   attribute_bonuses: IAttributeBonus[];
   racial_abilities: IRacialAbility[];
@@ -74,6 +76,7 @@ export interface ITool {
 export interface IOrigin {
   id: number;
   name: string;
+  icon: string | null;
   description: string;
   attribute_bonus_options: IAttributeBonus[][];
   granted_proficiency: string | null;
@@ -88,3 +91,25 @@ export interface IOrigin {
 
 // Record<EAttribute, number> — resultado final salvo no personagem.
 export type ICharacterAttributes = Record<`${EAttribute}`, number>;
+
+export type TSpellCycle = 'truque' | '1' | '2';
+
+// Espelha db/schema/spells.ts.
+export interface ISpell {
+  id: number;
+  name: string;
+  cast_time: string;
+  duration: string;
+  restrictions: string;
+  range: string;
+  cost: string;
+  description: string;
+}
+
+// Resultado de GET /api/spells?class_id= — a magia junto do ciclo em que
+// aquela classe específica a conjura (a mesma ISpell pode ter ciclos
+// diferentes para classes diferentes, por isso o ciclo não vive em ISpell).
+export interface IClassSpell {
+  spell: ISpell;
+  cycle: TSpellCycle;
+}
