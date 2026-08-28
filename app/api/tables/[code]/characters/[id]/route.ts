@@ -3,6 +3,7 @@ import { tables, characters, tableZones } from '@/db/schema';
 import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
+import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
 import { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
@@ -22,6 +23,11 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     has_mana: c.has_mana,
     mana_current: c.mana_current,
     mana_max: c.mana_max,
+    class_id: c.class_id,
+    species_id: c.species_id,
+    origin_id: c.origin_id,
+    level: c.level,
+    attributes: c.attributes as ICharacterAttributes | null,
     created_at: c.created_at ? c.created_at.toISOString() : null,
     updated_at: c.updated_at ? c.updated_at.toISOString() : null,
   };
