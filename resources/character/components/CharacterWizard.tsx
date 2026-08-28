@@ -207,7 +207,10 @@ export function CharacterWizard({
 
       {!anyLoading && step === 'species' ? (
         <Stack gap="sm">
-          <Text size="sm" c="dimmed">
+          <Text
+            size="sm"
+            c="dimmed"
+          >
             Escolha a Espécie do personagem.
           </Text>
 
@@ -230,7 +233,10 @@ export function CharacterWizard({
 
       {!anyLoading && step === 'class' ? (
         <Stack gap="sm">
-          <Text size="sm" c="dimmed">
+          <Text
+            size="sm"
+            c="dimmed"
+          >
             Escolha a Classe do personagem.
           </Text>
 
@@ -246,14 +252,22 @@ export function CharacterWizard({
                   {item.name}
                 </Text>
 
-                <Text size="xs" c="dimmed">
+                <Text
+                  size="xs"
+                  c="dimmed"
+                >
                   {`Vida: ${item.hp_base}${item.mana_base > 0 ? ` · Mana: ${item.mana_base}` : ''}`}
                 </Text>
               </Card>
             ))}
           </SimpleGrid>
 
-          <Button variant="subtle" color="gray" size="xs" onClick={() => setStep('species')}>
+          <Button
+            variant="subtle"
+            color="gray"
+            size="xs"
+            onClick={() => setStep('species')}
+          >
             Voltar
           </Button>
         </Stack>
@@ -267,11 +281,17 @@ export function CharacterWizard({
 
           {selectedClass.skill_proficiency_choice ? (
             <div>
-              <Text size="sm" fw={600}>
+              <Text
+                size="sm"
+                fw={600}
+              >
                 {`Perícias — escolha ${selectedClass.skill_proficiency_choice.count}`}
               </Text>
 
-              <Stack gap="xs" mt="xs">
+              <Stack
+                gap="xs"
+                mt="xs"
+              >
                 {selectedClass.skill_proficiency_choice.options.map((option) => (
                   <Checkbox
                     key={option}
@@ -286,11 +306,17 @@ export function CharacterWizard({
 
           {selectedClass.knowledge_proficiency_choice && selectedClass.knowledge_proficiency_choice.count > 0 ? (
             <div>
-              <Text size="sm" fw={600}>
+              <Text
+                size="sm"
+                fw={600}
+              >
                 {`Conhecimentos — escolha ${selectedClass.knowledge_proficiency_choice.count}`}
               </Text>
 
-              <Stack gap="xs" mt="xs">
+              <Stack
+                gap="xs"
+                mt="xs"
+              >
                 {selectedClass.knowledge_proficiency_choice.options.map((option) => (
                   <Checkbox
                     key={option}
@@ -305,11 +331,18 @@ export function CharacterWizard({
 
           {selectedClass.equipment_choice ? (
             <div>
-              <Text size="sm" fw={600}>
+              <Text
+                size="sm"
+                fw={600}
+              >
                 Equipamento inicial
               </Text>
 
-              <Radio.Group value={equipmentLabel} onChange={setEquipmentLabel} mt="xs">
+              <Radio.Group
+                value={equipmentLabel}
+                onChange={setEquipmentLabel}
+                mt="xs"
+              >
                 <Stack gap="xs">
                   {selectedClass.equipment_choice.options.map((option) => (
                     <Radio
@@ -324,11 +357,19 @@ export function CharacterWizard({
           ) : null}
 
           <Group justify="space-between">
-            <Button variant="subtle" color="gray" size="xs" onClick={() => setStep('class')}>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="xs"
+              onClick={() => setStep('class')}
+            >
               Voltar
             </Button>
 
-            <Button disabled={!classChoicesValid()} onClick={() => setStep('origin')}>
+            <Button
+              disabled={!classChoicesValid()}
+              onClick={() => setStep('origin')}
+            >
               Continuar
             </Button>
           </Group>
@@ -339,7 +380,10 @@ export function CharacterWizard({
         <Stack gap="md">
           {!selectedOrigin ? (
             <>
-              <Text size="sm" c="dimmed">
+              <Text
+                size="sm"
+                c="dimmed"
+              >
                 Escolha a Origem do personagem.
               </Text>
 
@@ -369,7 +413,10 @@ export function CharacterWizard({
                 value={originBonusIndex === null ? null : String(originBonusIndex)}
                 onChange={(value) => setOriginBonusIndex(Number(value))}
               >
-                <Stack gap="xs" mt="xs">
+                <Stack
+                  gap="xs"
+                  mt="xs"
+                >
                   {selectedOrigin.attribute_bonus_options.map((option, index) => (
                     <Radio
                       key={index}
@@ -386,9 +433,16 @@ export function CharacterWizard({
                   value={originProficiency}
                   onChange={setOriginProficiency}
                 >
-                  <Stack gap="xs" mt="xs">
+                  <Stack
+                    gap="xs"
+                    mt="xs"
+                  >
                     {selectedOrigin.proficiency_choice.options.map((option) => (
-                      <Radio key={option} value={option} label={option} />
+                      <Radio
+                        key={option}
+                        value={option}
+                        label={option}
+                      />
                     ))}
                   </Stack>
                 </Radio.Group>
@@ -407,7 +461,10 @@ export function CharacterWizard({
             </Button>
 
             {selectedOrigin ? (
-              <Button disabled={!originValid()} onClick={() => setStep('review')}>
+              <Button
+                disabled={!originValid()}
+                onClick={() => setStep('review')}
+              >
                 Continuar
               </Button>
             ) : null}
@@ -425,9 +482,15 @@ export function CharacterWizard({
             onChange={(event) => setName(event.currentTarget.value)}
           />
 
-          <ImageUploadInput value={imageUrl} onChange={setImageUrl} />
+          <ImageUploadInput
+            value={imageUrl}
+            onChange={setImageUrl}
+          />
 
-          <Divider label="Resumo" labelPosition="left" />
+          <Divider
+            label="Resumo"
+            labelPosition="left"
+          />
 
           <Text size="sm">
             {`${selectedSpecies.name} · ${selectedClass.name} · ${selectedOrigin.name}`}
@@ -436,7 +499,10 @@ export function CharacterWizard({
           <SimpleGrid cols={4}>
             {ATTRIBUTE_ORDER.map((attribute) => (
               <div key={attribute}>
-                <Text size="xs" c="dimmed">
+                <Text
+                  size="xs"
+                  c="dimmed"
+                >
                   {ATTRIBUTE_LABEL[attribute]}
                 </Text>
 
@@ -453,13 +519,23 @@ export function CharacterWizard({
 
           {selectedClass.extra_resources.length > 0 ? (
             <div>
-              <Text size="sm" fw={600}>
+              <Text
+                size="sm"
+                fw={600}
+              >
                 Recursos da Classe
               </Text>
 
-              <Stack gap={4} mt="xs">
+              <Stack
+                gap={4}
+                mt="xs"
+              >
                 {selectedClass.extra_resources.map((resource) => (
-                  <Text key={resource.label} size="sm" c="dimmed">
+                  <Text
+                    key={resource.label}
+                    size="sm"
+                    c="dimmed"
+                  >
                     {`${resource.label}: ${resource.value}`}
                   </Text>
                 ))}
@@ -468,7 +544,12 @@ export function CharacterWizard({
           ) : null}
 
           <Group justify="space-between">
-            <Button variant="subtle" color="gray" size="xs" onClick={() => setStep('origin')}>
+            <Button
+              variant="subtle"
+              color="gray"
+              size="xs"
+              onClick={() => setStep('origin')}
+            >
               Voltar
             </Button>
 
