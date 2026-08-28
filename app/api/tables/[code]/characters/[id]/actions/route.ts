@@ -32,6 +32,8 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     origin_id: c.origin_id,
     level: c.level,
     attributes: c.attributes as ICharacterAttributes | null,
+    known_spell_ids: c.known_spell_ids as number[],
+    custom_items: c.custom_items,
     created_at: c.created_at ? c.created_at.toISOString() : null,
     updated_at: c.updated_at ? c.updated_at.toISOString() : null,
   };

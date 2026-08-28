@@ -28,6 +28,8 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     origin_id: c.origin_id,
     level: c.level,
     attributes: c.attributes as ICharacterAttributes | null,
+    known_spell_ids: c.known_spell_ids as number[],
+    custom_items: c.custom_items,
     created_at: c.created_at ? c.created_at.toISOString() : null,
     updated_at: c.updated_at ? c.updated_at.toISOString() : null,
   };
@@ -124,6 +126,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       origin_id: typeof body.origin_id === 'number' ? body.origin_id : null,
       level: typeof body.level === 'number' ? body.level : 1,
       attributes: body.attributes && typeof body.attributes === 'object' ? body.attributes : null,
+      known_spell_ids: Array.isArray(body.known_spell_ids) ? body.known_spell_ids.filter((id: unknown) => typeof id === 'number') : [],
+      custom_items: typeof body.custom_items === 'string' && body.custom_items.trim() ? body.custom_items.trim() : null,
       created_at: now,
       updated_at: now,
     }).returning();
