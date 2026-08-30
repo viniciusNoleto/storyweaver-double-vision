@@ -312,3 +312,9 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .card-zoom{display:flex;align-items:center;gap:6px;padding:0 4px;border-right:1px solid var(--border);margin-right:4px}
 .card-zoom-pct{font-size:12px;color:var(--text-dim);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
 .zoom-slider{width:90px;accent-color:var(--gold-dim);cursor:pointer}
+
+/* --- Home (Task 15) --- */
+.home-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px}
+.home-glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(1000px 600px at 50% 30%, rgba(201,162,39,.12), transparent 65%)}
+.home-content{max-width:560px;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative;z-index:1}
+.home-content h1{font-size:clamp(36px,5vw,54px);color:var(--gold-light);letter-spacing:.04em;text-shadow:0 2px 30px rgba(0,0,0,.6)}
