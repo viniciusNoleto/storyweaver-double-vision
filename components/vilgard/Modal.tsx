@@ -6,12 +6,14 @@ export function Modal({
   children,
   fullscreen = false,
   wide = false,
+  contentClassName = '',
 }: {
   open: boolean;
   onClose: () => void;
   children: React.ReactNode;
   fullscreen?: boolean;
   wide?: boolean;
+  contentClassName?: string;
 }) {
   if (!open) return null;
 
@@ -21,7 +23,7 @@ export function Modal({
       onClick={onClose}
     >
       <div
-        className={`card-modal-box ${fullscreen ? 'fullscreen' : ''} ${wide ? 'edit-wide' : ''}`}
+        className={`card-modal-box ${fullscreen ? 'fullscreen' : ''} ${wide ? 'edit-wide' : ''} ${contentClassName}`}
         onClick={(event) => event.stopPropagation()}
       >
         {children}
