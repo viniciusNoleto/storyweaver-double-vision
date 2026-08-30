@@ -1,58 +1,30 @@
 import {
-  PRIMARY_COLOR_PALETTE,
-  SECONDARY_COLOR_PALETTE,
-  TERTIARY_COLOR_PALETTE,
-  ACCENT_COLOR_PALETTE,
-  PRIMARY_COLOR,
-  PRIMARY_LIGHT,
-  DARK_BG,
-  BOARD_BG,
-  PANEL_BG,
-  PARCHMENT,
-  PARCHMENT_BG,
-  INK_TEXT,
-} from './shared/constants/colors';
+  VG_BG, VG_BG2, VG_BG3, VG_GOLD, VG_GOLD_LIGHT, VG_GOLD_DIM,
+  VG_MAROON, VG_MAROON_LIGHT, VG_TEXT, VG_TEXT_DIM, VG_TEXT_FAINT,
+  VG_BORDER, VG_MANA_BLUE,
+} from './libs/vilgard-colors';
 
-// Redesign visual (ver `.claude/rules/table-concept.md` seção 6, bloco
-// "Redesign visual"): além das rampas `primary`/`secondary`/`tertiary`/`accent`
-// (agora dourado/vinho/arcano/ink), expõe os tokens planos do projeto de
-// referência (`gold`, `gold-light`, `vilgard`, `board`, `panel`, `parchment`)
-// para uso direto em classes utilitárias com modificador de opacidade (ex:
-// `border-gold/40`, `bg-gold/10`) — `primary-500` sozinho não aceita `/40`
-// como um token de cor plano aceita — e as famílias de fonte `font-display`/
-// `font-body`/`font-accent`, que apontam para as CSS custom properties
-// setadas por `libs/fonts.ts` em `app/layout.tsx`.
 export default {
-  darkMode: ['class', '[data-mantine-color-scheme="dark"]'],
   theme: {
     extend: {
       colors: {
-        primary: PRIMARY_COLOR_PALETTE,
-        secondary: SECONDARY_COLOR_PALETTE,
-        tertiary: TERTIARY_COLOR_PALETTE,
-        accent: ACCENT_COLOR_PALETTE,
-        gold: PRIMARY_COLOR,
-        'gold-light': PRIMARY_LIGHT,
-        vilgard: DARK_BG,
-        board: BOARD_BG,
-        panel: PANEL_BG,
-        parchment: PARCHMENT,
-        'parchment-panel': PARCHMENT_BG,
-        ink: INK_TEXT,
+        'vg-bg': VG_BG,
+        'vg-bg2': VG_BG2,
+        'vg-bg3': VG_BG3,
+        'vg-gold': VG_GOLD,
+        'vg-gold-light': VG_GOLD_LIGHT,
+        'vg-gold-dim': VG_GOLD_DIM,
+        'vg-maroon': VG_MAROON,
+        'vg-maroon-light': VG_MAROON_LIGHT,
+        'vg-text': VG_TEXT,
+        'vg-text-dim': VG_TEXT_DIM,
+        'vg-text-faint': VG_TEXT_FAINT,
+        'vg-border': VG_BORDER,
+        'vg-mana': VG_MANA_BLUE,
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Georgia', 'serif'],
-        body: ['var(--font-body)', 'Georgia', 'serif'],
-        accent: ['var(--font-accent)', 'cursive'],
-      },
-      animation: {
-        'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
-      },
-      keyframes: {
-        'pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 16px rgba(201,168,76,0.3), inset 0 0 20px rgba(201,168,76,0.05)' },
-          '50%': { boxShadow: '0 0 32px rgba(201,168,76,0.5), inset 0 0 24px rgba(201,168,76,0.1)' },
-        },
+        display: ['var(--font-display)', 'serif'],
+        body: ['var(--font-body)', 'serif'],
       },
     },
   },
