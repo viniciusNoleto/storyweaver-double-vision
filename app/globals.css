@@ -55,3 +55,8 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .chip i, .chip svg{color:var(--cond-color, var(--gold))}
 .chip button{background:none;border:none;color:inherit;opacity:.6;cursor:pointer;font-size:12px;padding:0;line-height:1}
 .chip button:hover{opacity:1;color:var(--maroon-light)}
+.cond-badge-row{position:absolute;top:34px;left:8px;z-index:3;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+@keyframes badgeGlow{0%,100%{box-shadow:0 0 6px var(--cb-color), 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.7)}50%{box-shadow:0 0 16px var(--cb-color), 0 0 4px #fff, 0 1px 3px rgba(0,0,0,.7)}}
+.cond-badge{border-radius:50%;display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb, var(--cb-color) 68%, #14100a);border:1.5px solid color-mix(in srgb, var(--cb-color) 85%, white 15%);color:#fff;
+  animation:badgeGlow 1.8s ease-in-out infinite}
