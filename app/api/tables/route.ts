@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import { db } from '@/libs/db';
-import { tables, tablePublicColumns, tableZones } from '@/db/schema';
+import { tables, tablePublicColumns } from '@/db/schema';
 import { hashMasterKey } from '@/libs/tableAuth';
 import { setMasterSessionCookie } from '@/libs/session';
 import { ETableStatus } from '@/resources/table/enums/TableStatus';
@@ -67,20 +67,11 @@ export async function POST(request: Request) {
     const masterKeyHash = hashMasterKey(masterKey);
     const now = new Date();
 
-    const [createdTable] = await db.insert(tables).values({
+    await db.insert(tables).values({
       code,
       master_key_hash: masterKeyHash,
       name: name || null,
       status: ETableStatus.ACTIVE,
-      created_at: now,
-    }).returning({ id: tables.id });
-
-    // Toda Mesa nasce com exatamente 1 zona (position 0) — ver
-    // `.claude/rules/table-concept.md`. Personagens sempre têm uma zona
-    // default disponível para cair (ver `characters/route.ts`).
-    await db.insert(tableZones).values({
-      table_id: createdTable.id,
-      position: 0,
       created_at: now,
     });
 

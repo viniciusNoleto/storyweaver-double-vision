@@ -4,6 +4,7 @@ import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
+import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import type { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
@@ -18,7 +19,9 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     table_id: c.table_id,
     name: c.name,
     image_url: c.image_url,
-    zone_id: c.zone_id,
+    type: c.type as `${ECharacterType}`,
+    position_x: c.position_x,
+    position_y: c.position_y,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
     extra_hp: c.extra_hp,

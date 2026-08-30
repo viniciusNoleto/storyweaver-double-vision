@@ -1,11 +1,12 @@
 import { db } from '@/libs/db';
-import { tables, characters, tableZones } from '@/db/schema';
+import { tables, characters } from '@/db/schema';
 import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
+import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import { EStatusEffect } from '@/resources/character/enums/StatusEffect';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster {
@@ -14,7 +15,9 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     table_id: c.table_id,
     name: c.name,
     image_url: c.image_url,
-    zone_id: c.zone_id,
+    type: c.type as `${ECharacterType}`,
+    position_x: c.position_x,
+    position_y: c.position_y,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
     extra_hp: c.extra_hp,
@@ -70,35 +73,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       return NextResponse.json({ success: false, message: { 'pt-br': 'Informe o nome do personagem.', 'es-mx': 'Ingresa el nombre del personaje.', 'en-us': 'Enter the character name.' }, data: null }, { status: 422 });
     }
 
-    // Default: a zona de menor `position` da Mesa. Se o body enviar `zone_id`
-    // explicitamente, valida que pertence à mesma Mesa antes de usar — nunca
-    // confia num zone_id de outra Mesa vindo do cliente.
-    let zoneId: number | null = null;
-
-    if (typeof body.zone_id === 'number') {
-      const [zone] = await db
-        .select({ id: tableZones.id })
-        .from(tableZones)
-        .where(and(eq(tableZones.id, body.zone_id), eq(tableZones.table_id, table.id)));
-
-      if (zone) zoneId = zone.id;
-    }
-
-    if (zoneId === null) {
-      const [defaultZone] = await db
-        .select({ id: tableZones.id })
-        .from(tableZones)
-        .where(eq(tableZones.table_id, table.id))
-        .orderBy(tableZones.position)
-        .limit(1);
-
-      if (!defaultZone) {
-        return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa sem nenhuma divisão.', 'es-mx': 'Mesa sin ninguna división.', 'en-us': 'Table has no zones.' }, data: null }, { status: 422 });
-      }
-
-      zoneId = defaultZone.id;
-    }
-
     const now = new Date();
 
     const hasMana = typeof body.has_mana === 'boolean' ? body.has_mana : false;
@@ -110,7 +84,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       table_id: table.id,
       name,
       image_url: typeof body.image_url === 'string' ? body.image_url : null,
-      zone_id: zoneId,
+      type: typeof body.type === 'string' && ['PC', 'NPC', 'Monstro'].includes(body.type) ? body.type : 'PC',
+      position_x: typeof body.position_x === 'number' ? body.position_x : 20,
+      position_y: typeof body.position_y === 'number' ? body.position_y : 20,
       hp_current: typeof body.hp_current === 'number' ? body.hp_current : 0,
       hp_max: typeof body.hp_max === 'number' ? body.hp_max : 1,
       extra_hp: typeof body.extra_hp === 'number' ? Math.max(body.extra_hp, 0) : 0,

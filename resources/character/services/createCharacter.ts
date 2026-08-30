@@ -1,14 +1,15 @@
 import { appClient } from '@/utils/app-client';
 import { PayloadBody } from '@/shared/types/api';
 import type { ICharacterMaster } from '../models/Character';
+import type { ECharacterType } from '../enums/CharacterType';
 import type { EStatusEffect } from '../enums/StatusEffect';
 
 export type CreateCharacterServicePayload = {
   name: string;
   image_url?: string | null;
-  // Zona/divisão do tabuleiro. Se omitido, a rota usa a zona de menor
-  // `position` da Mesa como default.
-  zone_id?: number;
+  type?: `${ECharacterType}`;
+  position_x?: number;
+  position_y?: number;
   hp_current?: number;
   hp_max?: number;
   // Vida extra — bônus separado da vida normal (ver

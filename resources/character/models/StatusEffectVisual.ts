@@ -26,4 +26,12 @@ export const STATUS_EFFECT_VISUAL: Record<EStatusEffect, IStatusEffectVisual> = 
     icon: 'lucide:droplet',
     label: 'Sangrando',
   },
+  [EStatusEffect.DORMINDO]: {
+    icon: 'lucide:moon',
+    label: 'Dormindo',
+  },
+  [EStatusEffect.ENFEITICADO]: {
+    icon: 'lucide:heart',
+    label: 'Enfeitiçado',
+  },
 };

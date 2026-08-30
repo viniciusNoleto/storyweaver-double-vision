@@ -1,9 +1,10 @@
 import { db } from '@/libs/db';
-import { tables, characters, tableZones } from '@/db/schema';
+import { tables, characters } from '@/db/schema';
 import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
+import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import { and, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
@@ -14,7 +15,9 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     table_id: c.table_id,
     name: c.name,
     image_url: c.image_url,
-    zone_id: c.zone_id,
+    type: c.type as `${ECharacterType}`,
+    position_x: c.position_x,
+    position_y: c.position_y,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
     extra_hp: c.extra_hp,
@@ -71,13 +74,6 @@ function characterNotFound() {
   return NextResponse.json({ success: false, message: { 'pt-br': 'Personagem não encontrado.', 'es-mx': 'Personaje no encontrado.', 'en-us': 'Character not found.' }, data: null }, { status: 404 });
 }
 
-// `zone_id` inválido (não existe ou pertence a outra Mesa) — 422 em vez de
-// ignorar silenciosamente, para o client (drag-and-drop entre zonas) saber
-// que a operação falhou.
-function invalidZone() {
-  return NextResponse.json({ success: false, message: { 'pt-br': 'Divisão inválida.', 'es-mx': 'División inválida.', 'en-us': 'Invalid zone.' }, data: null }, { status: 422 });
-}
-
 // Atualiza um personagem (nome, imagem, posição, hp, status_effects,
 // visible). Todos os campos do body são opcionais — só os presentes são
 // alterados. Só o Mestre pode.
@@ -106,16 +102,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     if (typeof body.name === 'string' && body.name.trim()) updates.name = body.name.trim();
     if ('image_url' in body) updates.image_url = typeof body.image_url === 'string' ? body.image_url : null;
 
-    if (typeof body.zone_id === 'number') {
-      const [zone] = await db
-        .select({ id: tableZones.id })
-        .from(tableZones)
-        .where(and(eq(tableZones.id, body.zone_id), eq(tableZones.table_id, table.id)));
-
-      if (!zone) return invalidZone();
-
-      updates.zone_id = zone.id;
-    }
+    if (typeof body.type === 'string' && ['PC', 'NPC', 'Monstro'].includes(body.type)) updates.type = body.type;
+    if (typeof body.position_x === 'number') updates.position_x = body.position_x;
+    if (typeof body.position_y === 'number') updates.position_y = body.position_y;
 
     if (typeof body.hp_current === 'number') updates.hp_current = body.hp_current;
     if (typeof body.hp_max === 'number') updates.hp_max = body.hp_max;

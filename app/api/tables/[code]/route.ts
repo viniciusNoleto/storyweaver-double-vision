@@ -1,12 +1,12 @@
 import { db } from '@/libs/db';
-import { tables, tablePublicColumns, characters, tableZones } from '@/db/schema';
+import { tables, tablePublicColumns, characters } from '@/db/schema';
 import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import { healthColor } from '@/resources/character/models/HealthColor';
 import type { ICharacterDisplay, ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
+import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import type { EStatusEffect } from '@/resources/character/enums/StatusEffect';
-import type { ITableZone } from '@/resources/table/models/TableZone';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
@@ -55,20 +55,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     const forcedDisplay = new URL(request.url).searchParams.get('view') === 'display';
     const isMaster = forcedDisplay ? false : await getCurrentMaster(tableCode, table.id);
 
-    const zoneRows = await db
-      .select()
-      .from(tableZones)
-      .where(eq(tableZones.table_id, table.id))
-      .orderBy(tableZones.position);
-
-    // Zonas nunca carregam número de jogo — mesmo formato para Mestre e
-    // Exibição (ver `.claude/rules/table-concept.md`).
-    const zoneList: ITableZone[] = zoneRows.map((z) => ({
-      id: z.id,
-      table_id: z.table_id,
-      position: z.position,
-    }));
-
     const characterRows = await db
       .select()
       .from(characters)
@@ -81,7 +67,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
         table_id: c.table_id,
         name: c.name,
         image_url: c.image_url,
-        zone_id: c.zone_id,
+        type: c.type as `${ECharacterType}`,
+        position_x: c.position_x,
+        position_y: c.position_y,
         hp_current: c.hp_current,
         hp_max: c.hp_max,
         extra_hp: c.extra_hp,
@@ -107,7 +95,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
           table_id: c.table_id,
           name: c.name,
           image_url: c.image_url,
-          zone_id: c.zone_id,
+          type: c.type as `${ECharacterType}`,
+          position_x: c.position_x,
+          position_y: c.position_y,
           // hp_current/hp_max/extra_hp NUNCA entram aqui, nem ocultos — só o
           // resultado já calculado de HealthColor.ts (que já incorpora
           // extra_hp no numerador/denominador). Ver regra de produto em
@@ -131,7 +121,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     return NextResponse.json({
       success: true,
       message: { 'pt-br': 'Operação realizada com sucesso.', 'es-mx': 'Operación realizada con éxito.', 'en-us': 'Operation completed successfully.' },
-      data: { table, you: { is_master: isMaster }, zones: zoneList, characters: characterList },
+      data: { table, you: { is_master: isMaster }, characters: characterList },
     });
   } catch (e) {
     console.error(e);
@@ -176,10 +166,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
   }
 }
 
-// Apaga a Mesa e tudo que pertence a ela (personagens, divisões). Só o
-// Mestre pode. Sem `ON DELETE CASCADE` no schema (ver `db/schema/`), então a
-// ordem de exclusão respeita as foreign keys — personagens e zonas antes da
-// Mesa — dentro de uma única transação.
+// Apaga a Mesa e tudo que pertence a ela (personagens). Só o Mestre pode.
+// Sem `ON DELETE CASCADE` no schema (ver `db/schema/`), então a ordem de
+// exclusão respeita as foreign keys — personagens antes da Mesa — dentro de
+// uma única transação.
 export async function DELETE(_request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
@@ -192,7 +182,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     await db.transaction(async (tx) => {
       await tx.delete(characters).where(eq(characters.table_id, table.id));
-      await tx.delete(tableZones).where(eq(tableZones.table_id, table.id));
       await tx.delete(tables).where(eq(tables.id, table.id));
     });
 

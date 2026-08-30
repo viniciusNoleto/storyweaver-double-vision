@@ -1,3 +1,4 @@
+import type { ECharacterType } from '../enums/CharacterType';
 import type { EStatusEffect } from '../enums/StatusEffect';
 import type { ICharacterAttributes } from './RulesContent';
 
@@ -22,16 +23,12 @@ interface ICharacterBase {
   table_id: number;
   name: string;
   image_url: string | null;
-  // Divisão/zona do tabuleiro em que o personagem está (substitui o antigo
-  // position_x/position_y de posicionamento livre). Seguro em ambos os
-  // formatos — não é um número de jogo (hp), é só a organização visual
-  // das fichas. Ver `.claude/rules/table-concept.md`.
-  zone_id: number;
-  // Estados fixos (atordoado/envenenado/preso/sangrando — ver
-  // `resources/character/enums/StatusEffect.ts`). Representados só pelo slug,
-  // sem número — o ícone/animação de cada um vem de
-  // `StatusEffectVisual.ts`/`StatusEffectBadge.tsx`. Por isso é seguro em
-  // ambos os formatos (Mestre e Exibição).
+  type: `${ECharacterType}`;
+  // Posição livre no tabuleiro, em pixels. Seguro em ambos os formatos — não
+  // é um número de jogo, é só organização visual (mesmo raciocínio que
+  // zone_id tinha antes).
+  position_x: number;
+  position_y: number;
   status_effects: EStatusEffect[];
   created_at: string | null;
   updated_at: string | null;
