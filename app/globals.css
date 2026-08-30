@@ -45,3 +45,13 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .switch-track.on{border-color:var(--gold)}
 .switch-dot{position:absolute;top:1px;left:1px;width:12px;height:12px;border-radius:50%;background:var(--text-faint);transition:transform .2s ease,background .2s ease}
 .switch-track.on .switch-dot{transform:translateX(14px);background:var(--gold-light)}
+.card-modal-backdrop{position:absolute;inset:0;z-index:20;background:rgba(6,4,2,.82);display:flex;align-items:center;justify-content:center;border-radius:8px;animation:fadeUp .18s ease both;cursor:pointer}
+.card-modal-backdrop.fullscreen{position:fixed;inset:0;border-radius:0;z-index:100}
+.card-modal-box{cursor:default;width:78%;max-width:180px;background:linear-gradient(160deg, var(--bg3), var(--bg2));border:1px solid var(--gold-dim);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 30px rgba(201,162,39,.3), var(--shadow-deep)}
+.card-modal-box.fullscreen{width:min(90vw,340px);max-width:none;max-height:85vh;overflow:auto}
+.card-modal-box.fullscreen.edit-wide{width:min(92vw,420px)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:1;min-height:0;overflow:hidden;align-content:flex-start}
+.chip{font-size:11.5px;padding:4px 9px 4px 7px;border-radius:12px;border:1px solid color-mix(in srgb, var(--cond-color, var(--gold)) 55%, var(--border));color:color-mix(in srgb, var(--cond-color, var(--gold-light)) 75%, var(--text));display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb, var(--cond-color, var(--gold)) 16%, rgba(0,0,0,.2))}
+.chip i, .chip svg{color:var(--cond-color, var(--gold))}
+.chip button{background:none;border:none;color:inherit;opacity:.6;cursor:pointer;font-size:12px;padding:0;line-height:1}
+.chip button:hover{opacity:1;color:var(--maroon-light)}
