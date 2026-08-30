@@ -130,42 +130,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   }
 }
 
-// Renomeia a Mesa (`name`). Só o Mestre pode. Usado pela tela "Gerenciar
-// Mesas" (ver `.claude/rules/table-concept.md`).
-export async function PATCH(request: Request, { params }: { params: Promise<{ code: string }> }) {
-  try {
-    const { code } = await params;
-    const tableCode = code.toUpperCase();
-
-    const { table, isMaster } = await resolveTableAndMaster(tableCode);
-
-    if (!table) return tableNotFound();
-    if (!isMaster) return unauthorized();
-
-    const body = await request.json().catch(() => ({}));
-
-    if (typeof body.name !== 'string' || !body.name.trim()) {
-      return NextResponse.json({ success: false, message: { 'pt-br': 'Nome inválido.', 'es-mx': 'Nombre inválido.', 'en-us': 'Invalid name.' }, data: null }, { status: 422 });
-    }
-
-    const [updated] = await db
-      .update(tables)
-      .set({ name: body.name.trim() })
-      .where(eq(tables.id, table.id))
-      .returning(tablePublicColumns);
-
-    return NextResponse.json({
-      success: true,
-      message: { 'pt-br': 'Mesa renomeada com sucesso.', 'es-mx': 'Mesa renombrada con éxito.', 'en-us': 'Table renamed successfully.' },
-      data: updated,
-    });
-  } catch (e) {
-    console.error(e);
-
-    return NextResponse.json({ success: false, message: { 'pt-br': 'Erro ao renomear a mesa.', 'es-mx': 'Error al renombrar la mesa.', 'en-us': 'Error renaming table.' }, data: null }, { status: 500 });
-  }
-}
-
 // Apaga a Mesa e tudo que pertence a ela (personagens). Só o Mestre pode.
 // Sem `ON DELETE CASCADE` no schema (ver `db/schema/`), então a ordem de
 // exclusão respeita as foreign keys — personagens antes da Mesa — dentro de

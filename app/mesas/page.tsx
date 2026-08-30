@@ -7,10 +7,16 @@ import { ArrowLeft, Plus, Scroll, Trash, UsersThree, CrownSimple, Monitor, X, Ch
 import { getTablesService, GET_TABLES_KEY } from '@/resources/table/services/getTables';
 import { createTableService } from '@/resources/table/services/createTable';
 import { deleteTableService } from '@/resources/table/services/deleteTable';
+import { IconButton } from '@/components/vilgard/IconButton';
+import { Button } from '@/components/vilgard/Button';
+import { Modal } from '@/components/vilgard/Modal';
+import { ErrorBanner } from '@/components/vilgard/ErrorBanner';
 
 export default function MesasPage() {
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState('');
+  const [confirmDeleteCode, setConfirmDeleteCode] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data } = useQuery({ queryKey: GET_TABLES_KEY, queryFn: getTablesService });
@@ -22,14 +28,25 @@ export default function MesasPage() {
       setNewName('');
       setShowNewForm(false);
     },
+    onError: (err: any) => {
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível criar a mesa. Tente novamente.');
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (code: string) => deleteTableService({ code }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: GET_TABLES_KEY }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: GET_TABLES_KEY });
+      setConfirmDeleteCode(null);
+    },
+    onError: (err: any) => {
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível excluir a mesa. Tente novamente.');
+      setConfirmDeleteCode(null);
+    },
   });
 
   const tables = data?.data ?? [];
+  const tableToDelete = tables.find((table) => table.code === confirmDeleteCode) ?? null;
 
   return (
     <div className="table-bg">
@@ -49,16 +66,23 @@ export default function MesasPage() {
           Suas Mesas
         </span>
 
-        <button
-          className="btn btn-primary"
+        <Button
+          variant="primary"
           onClick={() => setShowNewForm((v) => !v)}
         >
           <Plus weight="bold" />
           Nova mesa
-        </button>
+        </Button>
       </header>
 
       <main className="board tables-board">
+        {error ? (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+
         {showNewForm ? (
           <div className="add-form fade">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -66,12 +90,10 @@ export default function MesasPage() {
                 Nova mesa
               </p>
 
-              <button
-                className="icon-btn"
+              <IconButton
+                icon={<X weight="bold" />}
                 onClick={() => setShowNewForm(false)}
-              >
-                <X weight="bold" />
-              </button>
+              />
             </div>
 
             <input
@@ -81,13 +103,14 @@ export default function MesasPage() {
               onChange={(e) => setNewName(e.target.value)}
             />
 
-            <button
-              className="btn btn-primary"
+            <Button
+              variant="primary"
               onClick={() => createMutation.mutate()}
+              disabled={createMutation.isPending}
             >
               <Check weight="bold" />
               Criar mesa
-            </button>
+            </Button>
           </div>
         ) : null}
 
@@ -99,13 +122,11 @@ export default function MesasPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <h3>{table.name ?? 'Mesa sem nome'}</h3>
 
-              <button
-                className="icon-btn"
-                onClick={() => deleteMutation.mutate(table.code)}
+              <IconButton
+                icon={<Trash weight="bold" />}
+                onClick={() => setConfirmDeleteCode(table.code)}
                 title="Excluir mesa"
-              >
-                <Trash weight="bold" />
-              </button>
+              />
             </div>
 
             <span className="meta">
@@ -137,6 +158,38 @@ export default function MesasPage() {
           </div>
         ))}
       </main>
+
+      <Modal
+        open={!!confirmDeleteCode}
+        onClose={() => setConfirmDeleteCode(null)}
+      >
+        <p className="card-modal-title">
+          <Trash weight="bold" />
+          {`Excluir ${tableToDelete?.name ?? 'esta mesa'}?`}
+        </p>
+
+        <p>
+          Tem certeza? Esta ação não pode ser desfeita.
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <Button
+            variant="ghost"
+            onClick={() => setConfirmDeleteCode(null)}
+            disabled={deleteMutation.isPending}
+          >
+            Cancelar
+          </Button>
+
+          <Button
+            variant="danger"
+            onClick={() => confirmDeleteCode && deleteMutation.mutate(confirmDeleteCode)}
+            disabled={deleteMutation.isPending}
+          >
+            Excluir
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

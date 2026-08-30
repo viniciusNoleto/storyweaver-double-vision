@@ -137,20 +137,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       .where(eq(characters.id, characterId))
       .returning();
 
+    // Payload do evento SSE narrado para só `character_id`/`action` — este
+    // canal (`table:${code}`) não exige autenticação para abrir (ver
+    // `app/api/tables/[code]/stream/route.ts`), então nenhum número de jogo
+    // (hp/mana/extra_hp) deve trafegar por aqui. Quem precisa dos números
+    // reais já os busca via `GET /api/tables/[code]` (que sim exige o cookie
+    // de Mestre para devolver o formato completo).
     publish(`table:${tableCode}`, {
       type: 'character-action',
       data: {
         character_id: updated.id,
         action: type,
-        amount,
-        hp_current: updated.hp_current,
-        hp_max: updated.hp_max,
-        // Sempre presentes no payload do evento, independente do tipo de
-        // ação — simplifica quem consome (não precisa checar `action` antes
-        // de ler mana_current/mana_max/extra_hp). Ver `.claude/rules/table-concept.md`.
-        mana_current: updated.mana_current,
-        mana_max: updated.mana_max,
-        extra_hp: updated.extra_hp,
       },
     });
 

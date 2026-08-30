@@ -15,7 +15,17 @@ import type { ICharacterDisplay } from '@/resources/character/models/Character';
 export default function ExibicaoPage({ params }: { params: Promise<{ code: string }> }) {
   const { code } = use(params);
 
-  const { data } = useTableStream(code, { forceDisplay: true });
+  const { data, isError } = useTableStream(code, { forceDisplay: true });
+
+  if (isError) {
+    return (
+      <div className="display-body">
+        <p className="empty-display">
+          Não foi possível carregar esta mesa. Verifique o código e tente novamente.
+        </p>
+      </div>
+    );
+  }
 
   if (!data) return null;
 

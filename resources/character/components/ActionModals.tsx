@@ -6,6 +6,7 @@ import { Sword, Heart, ShieldPlus, Sparkle, Plus, Minus, Check } from '@phosphor
 import { Modal } from '@/components/vilgard/Modal';
 import { Button } from '@/components/vilgard/Button';
 import { Field } from '@/components/vilgard/Field';
+import { ErrorBanner } from '@/components/vilgard/ErrorBanner';
 import { applyCharacterActionService } from '../services/applyCharacterAction';
 import { updateCharacterService } from '../services/updateCharacter';
 import { GET_TABLE_KEY } from '@/resources/table/services/getTable';
@@ -25,6 +26,7 @@ export interface ActionModalsProps {
 
 export function ActionModals({ code, character, open, onClose, onApplied }: ActionModalsProps) {
   const [amount, setAmount] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const actionMutation = useMutation({
@@ -38,6 +40,9 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
       setAmount('');
       onApplied();
     },
+    onError: (err: any) => {
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível aplicar a ação. Tente novamente.');
+    },
   });
 
   const conditionMutation = useMutation({
@@ -48,6 +53,9 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: GET_TABLE_KEY(code) });
+    },
+    onError: (err: any) => {
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível atualizar os estados. Tente novamente.');
     },
   });
 
@@ -74,6 +82,13 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
           {`Aplicar dano em ${character.name}`}
         </p>
 
+        {error ? (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+
         <Field
           type="number"
           min={0}
@@ -86,6 +101,7 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
         <Button
           variant="primary"
           onClick={() => actionMutation.mutate({ type: 'damage', amount: Number(amount) || 0 })}
+          disabled={actionMutation.isPending}
         >
           Aplicar dano
         </Button>
@@ -101,6 +117,13 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
           {`Curar ${character.name}`}
         </p>
 
+        {error ? (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+
         <Field
           type="number"
           min={0}
@@ -113,6 +136,7 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
         <Button
           variant="primary"
           onClick={() => actionMutation.mutate({ type: 'heal', amount: Number(amount) || 0 })}
+          disabled={actionMutation.isPending}
         >
           Aplicar cura
         </Button>
@@ -128,6 +152,13 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
           {`Vida extra de ${character.name}`}
         </p>
 
+        {error ? (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+
         <Field
           type="number"
           min={0}
@@ -140,6 +171,7 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
         <Button
           variant="primary"
           onClick={() => actionMutation.mutate({ type: 'extra-add', amount: Number(amount) || 0 })}
+          disabled={actionMutation.isPending}
         >
           <Plus weight="bold" />
 
@@ -149,6 +181,7 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
         <Button
           variant="ghost"
           onClick={() => actionMutation.mutate({ type: 'extra-remove', amount: Number(amount) || 0 })}
+          disabled={actionMutation.isPending}
         >
           <Minus weight="bold" />
 
@@ -166,6 +199,13 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
           {`Estados de ${character.name}`}
         </p>
 
+        {error ? (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+
         <div className="cond-quick">
           {Object.values(EStatusEffect).map((effect) => {
             const visual = STATUS_EFFECT_VISUAL[effect];
@@ -173,6 +213,7 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
 
             return (
               <button
+                type="button"
                 key={effect}
                 className={`cond-chip-btn ${active ? 'active' : ''}`}
                 style={{ '--cond-color': visual.color } as React.CSSProperties}

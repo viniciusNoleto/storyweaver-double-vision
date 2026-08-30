@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ICharacterMaster } from '../models/Character';
 
 export interface TableBoardProps {
@@ -19,48 +19,81 @@ export function TableBoard({ characters, renderCard, onMove, cardScale = 1 }: Ta
   const [isDragging, setIsDragging] = useState(false);
   const originRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const startRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const currentPosRef = useRef<{ x: number; y: number } | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
+
+  function clearDragPos(characterId: number) {
+    setDragPos((prev) => {
+      const next = { ...prev };
+
+      delete next[characterId];
+
+      return next;
+    });
+  }
 
   function beginDrag(character: ICharacterMaster, event: React.PointerEvent) {
     setDragId(character.id);
     setIsDragging(true);
     originRef.current = { x: character.position_x, y: character.position_y };
     startRef.current = { x: event.clientX, y: event.clientY };
+    currentPosRef.current = null;
 
     function onMoveHandler(ev: PointerEvent) {
       const dx = ev.clientX - startRef.current.x;
       const dy = ev.clientY - startRef.current.y;
 
+      const next = {
+        x: Math.max(0, originRef.current.x + dx),
+        y: Math.max(0, originRef.current.y + dy),
+      };
+
+      currentPosRef.current = next;
+
       setDragPos((prev) => ({
         ...prev,
-        [character.id]: {
-          x: Math.max(0, originRef.current.x + dx),
-          y: Math.max(0, originRef.current.y + dy),
-        },
+        [character.id]: next,
       }));
     }
 
-    function onUpHandler() {
+    function finishDrag(shouldPersist: boolean) {
       window.removeEventListener('pointermove', onMoveHandler);
       window.removeEventListener('pointerup', onUpHandler);
+      window.removeEventListener('pointercancel', onCancelHandler);
+      cleanupRef.current = null;
 
-      setDragPos((prev) => {
-        const p = prev[character.id];
+      const p = currentPosRef.current;
 
-        if (p) {
-          const snapped = { x: Math.round(p.x / 60) * 60, y: Math.round(p.y / 60) * 60 };
+      if (shouldPersist && p) {
+        const snapped = { x: Math.round(p.x / 60) * 60, y: Math.round(p.y / 60) * 60 };
 
-          onMove(character.id, snapped.x, snapped.y);
-        }
+        onMove(character.id, snapped.x, snapped.y);
+      }
 
-        return prev;
-      });
-
+      clearDragPos(character.id);
       setDragId(null);
       setIsDragging(false);
     }
 
+    function onUpHandler() {
+      finishDrag(true);
+    }
+
+    function onCancelHandler() {
+      finishDrag(false);
+    }
+
     window.addEventListener('pointermove', onMoveHandler);
     window.addEventListener('pointerup', onUpHandler);
+    window.addEventListener('pointercancel', onCancelHandler);
+
+    cleanupRef.current = () => finishDrag(false);
   }
 
   return (
@@ -80,6 +113,7 @@ export function TableBoard({ characters, renderCard, onMove, cardScale = 1 }: Ta
             }}
           >
             <button
+              type="button"
               className="move-handle"
               onPointerDown={(event) => beginDrag(character, event)}
               title="Mover"

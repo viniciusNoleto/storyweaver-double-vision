@@ -25,18 +25,13 @@ import { getTableService, GET_TABLE_KEY, GetTableServiceResponse } from '../serv
 // `onCharacterAction` é opcional — quem quiser animar dano/cura em tempo real
 // (Tela de Exibição, próxima etapa) passa esse callback; quem não passar
 // nada mantém o comportamento de sempre (só refetch a cada `state-changed`).
+// Payload narrado a propósito (ver `app/api/tables/[code]/characters/[id]/actions/route.ts`)
+// — o canal `table:${code}` não exige autenticação para abrir, então nenhum
+// número de jogo (hp/mana/extra_hp) é publicado nele; só o suficiente para
+// disparar uma animação (`character_id`/`action`).
 export type UseTableStreamCharacterAction = {
   character_id: number;
   action: 'damage' | 'heal' | 'mana-spend' | 'mana-restore' | 'extra-add' | 'extra-remove';
-  amount: number;
-  hp_current: number;
-  hp_max: number;
-  // Sempre presentes no payload, independente do tipo de ação (mesmo em
-  // eventos de 'damage'/'heal') — simplifica quem consome, ver
-  // `app/api/tables/[code]/characters/[id]/actions/route.ts`.
-  mana_current: number;
-  mana_max: number;
-  extra_hp: number;
 };
 
 export function useTableStream(code: string, options?: { forceDisplay?: boolean; onCharacterAction?: (data: UseTableStreamCharacterAction) => void }) {

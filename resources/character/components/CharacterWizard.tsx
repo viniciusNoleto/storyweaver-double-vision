@@ -6,6 +6,8 @@ import { ArrowRight, Check, Info } from '@phosphor-icons/react';
 import { Modal } from '@/components/vilgard/Modal';
 import { Button } from '@/components/vilgard/Button';
 import { Field } from '@/components/vilgard/Field';
+import { IconButton } from '@/components/vilgard/IconButton';
+import { ErrorBanner } from '@/components/vilgard/ErrorBanner';
 import { getClassesService, GET_CLASSES_KEY } from '../services/getClasses';
 import { getSpeciesService, GET_SPECIES_KEY } from '../services/getSpecies';
 import { getOriginsService, GET_ORIGINS_KEY } from '../services/getOrigins';
@@ -51,6 +53,7 @@ export function CharacterWizard({
   const [originProficiency, setOriginProficiency] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const { data: speciesData, isLoading: speciesLoading } = useQuery({ queryKey: GET_SPECIES_KEY, queryFn: getSpeciesService, enabled: opened });
   const { data: classesData, isLoading: classesLoading } = useQuery({ queryKey: GET_CLASSES_KEY, queryFn: getClassesService, enabled: opened });
@@ -76,6 +79,7 @@ export function CharacterWizard({
     setOriginProficiency(null);
     setName('');
     setImageUrl('');
+    setError(null);
   }
 
   function cancel() {
@@ -169,6 +173,9 @@ export function CharacterWizard({
       reset();
       onCreated(created);
     },
+    onError: (err: any) => {
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível criar o personagem. Tente novamente.');
+    },
   });
 
   const anyLoading = speciesLoading || classesLoading || originsLoading;
@@ -191,15 +198,20 @@ export function CharacterWizard({
           </p>
         </div>
 
-        <button
-          className="icon-btn"
+        <IconButton
+          icon="✕"
           onClick={cancel}
-        >
-          ✕
-        </button>
+        />
       </div>
 
       <div className="wiz-divider" />
+
+      {error ? (
+        <ErrorBanner
+          message={error}
+          onDismiss={() => setError(null)}
+        />
+      ) : null}
 
       {anyLoading ? (
         <p className="wiz-empty">
@@ -216,6 +228,7 @@ export function CharacterWizard({
           <div className="wiz-grid">
             {speciesList.map((item) => (
               <button
+                type="button"
                 key={item.id}
                 className="wiz-opt"
                 onClick={() => pickSpecies(item)}
@@ -244,6 +257,7 @@ export function CharacterWizard({
           <div className="wiz-grid">
             {classesList.map((item) => (
               <button
+                type="button"
                 key={item.id}
                 className="wiz-opt"
                 onClick={() => pickClass(item)}
@@ -278,6 +292,7 @@ export function CharacterWizard({
               <div className="wiz-pill-list">
                 {selectedClass.skill_proficiency_choice.options.map((option) => (
                   <button
+                    type="button"
                     key={option}
                     className={`wiz-pill ${skillChoices.includes(option) ? 'checked' : ''}`}
                     onClick={() => toggleSkillChoice(option)}
@@ -300,6 +315,7 @@ export function CharacterWizard({
               <div className="wiz-radio-cards">
                 {selectedClass.equipment_choice.options.map((option) => (
                   <button
+                    type="button"
                     key={option.label}
                     className={`wiz-radio-card ${equipmentLabel === option.label ? 'checked' : ''}`}
                     onClick={() => setEquipmentLabel(option.label)}
@@ -335,6 +351,7 @@ export function CharacterWizard({
           <div className="wiz-grid">
             {originsList.map((item) => (
               <button
+                type="button"
                 key={item.id}
                 className="wiz-opt"
                 onClick={() => pickOrigin(item)}
@@ -363,6 +380,7 @@ export function CharacterWizard({
           <div className="wiz-radio-cards">
             {selectedOrigin.attribute_bonus_options.map((option, index) => (
               <button
+                type="button"
                 key={index}
                 className={`wiz-radio-card ${originBonusIndex === index ? 'checked' : ''}`}
                 onClick={() => setOriginBonusIndex(index)}
@@ -383,6 +401,7 @@ export function CharacterWizard({
               <div className="wiz-radio-cards">
                 {selectedOrigin.proficiency_choice.options.map((option) => (
                   <button
+                    type="button"
                     key={option}
                     className={`wiz-radio-card ${originProficiency === option ? 'checked' : ''}`}
                     onClick={() => setOriginProficiency(option)}

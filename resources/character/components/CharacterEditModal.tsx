@@ -6,6 +6,7 @@ import { PencilSimple, Check, ArrowRight } from '@phosphor-icons/react';
 import { Modal } from '@/components/vilgard/Modal';
 import { Button } from '@/components/vilgard/Button';
 import { Field, FieldSelect } from '@/components/vilgard/Field';
+import { ErrorBanner } from '@/components/vilgard/ErrorBanner';
 import { updateCharacterService } from '../services/updateCharacter';
 import { getClassesService, GET_CLASSES_KEY } from '../services/getClasses';
 import { getSpeciesService, GET_SPECIES_KEY } from '../services/getSpecies';
@@ -33,6 +34,7 @@ export function CharacterEditModal({
   const [hpMax, setHpMax] = useState(1);
   const [manaMax, setManaMax] = useState(0);
   const [attrs, setAttrs] = useState<Record<string, number>>({});
+  const [error, setError] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -48,8 +50,9 @@ export function CharacterEditModal({
       setHpMax(character.hp_max);
       setManaMax(character.mana_max);
       setAttrs(character.attributes ?? {});
+      setError(null);
     }
-  }, [character]);
+  }, [character?.id]);
 
   const saveMutation = useMutation({
     mutationFn: () => {
@@ -64,6 +67,9 @@ export function CharacterEditModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: GET_TABLE_KEY(code) });
       onClose();
+    },
+    onError: (err: any) => {
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível salvar as alterações. Tente novamente.');
     },
   });
 
@@ -80,6 +86,13 @@ export function CharacterEditModal({
         <PencilSimple weight="bold" />
         {`Editar ${character.name}`}
       </p>
+
+      {error ? (
+        <ErrorBanner
+          message={error}
+          onDismiss={() => setError(null)}
+        />
+      ) : null}
 
       <div className="edit-page-dots">
         {[1, 2, 3].map((n) => (
@@ -186,6 +199,7 @@ export function CharacterEditModal({
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button
+              type="button"
               className="wiz-back"
               onClick={() => setPage(1)}
             >
@@ -224,6 +238,7 @@ export function CharacterEditModal({
 
           <div style={{ display: 'flex', gap: 8 }}>
             <button
+              type="button"
               className="wiz-back"
               onClick={() => setPage(2)}
             >
@@ -233,6 +248,7 @@ export function CharacterEditModal({
             <Button
               variant="primary"
               onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending}
               style={{ marginLeft: 'auto' }}
             >
               <Check weight="bold" />

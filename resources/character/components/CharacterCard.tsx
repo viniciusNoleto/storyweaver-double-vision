@@ -9,6 +9,8 @@ import { EStatusEffect } from '../enums/StatusEffect';
 import { STATUS_EFFECT_VISUAL } from '../models/StatusEffectVisual';
 import { ManaCrystals } from './ManaCrystals';
 import { StatusEffectBadge } from './StatusEffectBadge';
+import { IconButton } from '@/components/vilgard/IconButton';
+import { Switch } from '@/components/vilgard/Switch';
 
 export interface CharacterCardFx {
   type: 'damage' | 'heal' | 'mana-gain' | 'mana-loss';
@@ -57,6 +59,7 @@ export function CharacterCard({
       <div className={`rpg-flip-inner ${flipped ? 'flipped' : ''}`}>
         {/* FRENTE */}
         <div
+          key={fx?.token}
           className={`rpg-face rpg-front ${isNearDeath ? 'danger' : ''} ${conditionClass(EStatusEffect.SANGRANDO) ? 'bleed-flash' : ''} ${fxClass}`}
           style={{ borderColor: hpColor, '--hp-glow-a': `${hpColor}66`, '--hp-glow-b': `${hpColor}aa` } as React.CSSProperties}
           onClick={() => setFlipped(true)}
@@ -139,6 +142,7 @@ export function CharacterCard({
 
             <div className="rpg-hover-icons">
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#a83f4a' } as React.CSSProperties}
                 onClick={(e) => { e.stopPropagation(); onOpenDano(); }}
@@ -148,6 +152,7 @@ export function CharacterCard({
               </button>
 
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#7a9b5c' } as React.CSSProperties}
                 onClick={(e) => { e.stopPropagation(); onOpenCura(); }}
@@ -157,6 +162,7 @@ export function CharacterCard({
               </button>
 
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#c9a227' } as React.CSSProperties}
                 onClick={(e) => { e.stopPropagation(); onOpenVidaExtra(); }}
@@ -166,6 +172,7 @@ export function CharacterCard({
               </button>
 
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#b592ae' } as React.CSSProperties}
                 onClick={(e) => { e.stopPropagation(); onOpenEstado(); }}
@@ -192,13 +199,12 @@ export function CharacterCard({
               {c.type}
             </span>
 
-            <button
-              className="icon-btn edit-btn"
+            <IconButton
+              className="edit-btn"
+              icon={<PencilSimple weight="bold" />}
               onClick={onOpenEdit}
               title="Editar personagem"
-            >
-              <PencilSimple weight="bold" />
-            </button>
+            />
           </div>
 
           <div className="stat-row-pair">
@@ -270,6 +276,7 @@ export function CharacterCard({
               onClick={(e) => e.stopPropagation()}
             >
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#a83f4a' } as React.CSSProperties}
                 onClick={onOpenDano}
@@ -279,6 +286,7 @@ export function CharacterCard({
               </button>
 
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#7a9b5c' } as React.CSSProperties}
                 onClick={onOpenCura}
@@ -288,6 +296,7 @@ export function CharacterCard({
               </button>
 
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#c9a227' } as React.CSSProperties}
                 onClick={onOpenVidaExtra}
@@ -297,6 +306,7 @@ export function CharacterCard({
               </button>
 
               <button
+                type="button"
                 className="hover-icon"
                 style={{ '--act-color': '#b592ae' } as React.CSSProperties}
                 onClick={onOpenEstado}
@@ -306,25 +316,20 @@ export function CharacterCard({
               </button>
             </div>
 
-            <label
-              className="switch"
-              onClick={(e) => { e.stopPropagation(); onToggleVisible(); }}
-            >
-              <div className={`switch-track ${c.visible ? 'on' : ''}`}>
-                <div className="switch-dot" />
-              </div>
-            </label>
+            <Switch
+              checked={c.visible}
+              onChange={onToggleVisible}
+            />
 
-            <button
-              className="icon-btn"
-              onClick={(e) => { e.stopPropagation(); onRemove(); }}
+            <IconButton
+              icon="🗑"
+              onClick={onRemove}
               title="Remover"
-            >
-              🗑
-            </button>
+            />
           </div>
 
           <button
+            type="button"
             className="wiz-back"
             onClick={() => setFlipped(false)}
             style={{ marginTop: 'auto' }}

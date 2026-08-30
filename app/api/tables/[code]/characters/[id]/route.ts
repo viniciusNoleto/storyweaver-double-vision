@@ -106,8 +106,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     if (typeof body.position_x === 'number') updates.position_x = body.position_x;
     if (typeof body.position_y === 'number') updates.position_y = body.position_y;
 
-    if (typeof body.hp_current === 'number') updates.hp_current = body.hp_current;
-    if (typeof body.hp_max === 'number') updates.hp_max = body.hp_max;
+    // `hp_current`/`hp_max` sempre clampados juntos, mesmo padrão de
+    // `mana_current`/`mana_max` logo abaixo: se qualquer um dos dois vier no
+    // body, recalcula `hp_current` contra o `hp_max` RESULTANTE (o valor novo
+    // se enviado, senão o existente) — nunca deixa `hp_current` > `hp_max`
+    // persistido (ex.: Mestre reduzindo `hp_max` abaixo do `hp_current` atual).
+    if (typeof body.hp_max === 'number' || typeof body.hp_current === 'number') {
+      const resultingHpMax = typeof body.hp_max === 'number' ? body.hp_max : existing.hp_max;
+      const rawHpCurrent = typeof body.hp_current === 'number' ? body.hp_current : existing.hp_current;
+
+      if (typeof body.hp_max === 'number') updates.hp_max = resultingHpMax;
+
+      updates.hp_current = Math.min(Math.max(rawHpCurrent, 0), Math.max(resultingHpMax, 0));
+    }
+
     if (typeof body.extra_hp === 'number') updates.extra_hp = Math.max(body.extra_hp, 0);
     if (Array.isArray(body.status_effects)) updates.status_effects = sanitizeStatusEffects(body.status_effects);
     if (typeof body.visible === 'boolean') updates.visible = body.visible;
@@ -125,6 +137,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
       if (typeof body.mana_max === 'number') updates.mana_max = resultingManaMax;
 
       updates.mana_current = Math.min(Math.max(rawManaCurrent, 0), Math.max(resultingManaMax, 0));
+
+      // Invariante reforçada num único ponto (a API): `has_mana` é sempre
+      // `true` quando `mana_max > 0`. Sem isso, o formulário de edição pode
+      // deixar `mana_max` positivo com `has_mana: false`, e os cristais de
+      // mana ficam clicáveis apontando pra uma ação que sempre retorna 422.
+      // Só não força `true` se o próprio body já pediu `has_mana: false`
+      // explicitamente nesta mesma requisição.
+      if (typeof body.mana_max === 'number' && resultingManaMax > 0 && body.has_mana !== false) {
+        updates.has_mana = true;
+      }
     }
 
     const [character] = await db

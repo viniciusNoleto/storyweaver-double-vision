@@ -1,8 +1,6 @@
 'use client';
 
-export function Field(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  const { className = '', ...rest } = props;
-
+export function Field({ className = '', ...rest }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       className={`field ${className}`}
@@ -11,9 +9,7 @@ export function Field(props: React.InputHTMLAttributes<HTMLInputElement>) {
   );
 }
 
-export function FieldSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  const { className = '', ...rest } = props;
-
+export function FieldSelect({ className = '', ...rest }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       className={`field ${className}`}
@@ -22,9 +18,7 @@ export function FieldSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>
   );
 }
 
-export function FieldTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const { className = '', ...rest } = props;
-
+export function FieldTextarea({ className = '', ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       className={`field ${className}`}
