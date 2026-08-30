@@ -78,6 +78,13 @@
       "when": 1787932894546,
       "tag": "0010_real_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787933500000,
+      "tag": "0011_position_and_type",
+      "breakpoints": true
     }
   ]
 }
