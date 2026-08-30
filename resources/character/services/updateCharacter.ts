@@ -23,6 +23,7 @@ export type UpdateCharacterServicePayload = {
   has_mana?: boolean;
   mana_current?: number;
   mana_max?: number;
+  attributes?: import('../models/RulesContent').ICharacterAttributes | null;
 };
 
 // Só o Mestre pode chamar. Usado tanto pelo painel de edição de ficha quanto

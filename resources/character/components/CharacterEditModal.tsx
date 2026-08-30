@@ -14,6 +14,7 @@ import { GET_TABLE_KEY } from '@/resources/table/services/getTable';
 import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL } from '../enums/Attribute';
 import type { ICharacterMaster } from '../models/Character';
 import type { ECharacterType } from '../enums/CharacterType';
+import type { ICharacterAttributes } from '../models/RulesContent';
 
 export function CharacterEditModal({
   code,
@@ -57,7 +58,7 @@ export function CharacterEditModal({
       return updateCharacterService({
         code,
         characterId: character.id,
-        body: { name, type, hp_max: hpMax, mana_max: manaMax },
+        body: { name, type, hp_max: hpMax, mana_max: manaMax, attributes: attrs as ICharacterAttributes },
       });
     },
     onSuccess: () => {

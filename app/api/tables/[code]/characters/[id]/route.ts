@@ -112,6 +112,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     if (Array.isArray(body.status_effects)) updates.status_effects = sanitizeStatusEffects(body.status_effects);
     if (typeof body.visible === 'boolean') updates.visible = body.visible;
     if (typeof body.has_mana === 'boolean') updates.has_mana = body.has_mana;
+    if (body.attributes && typeof body.attributes === 'object') updates.attributes = body.attributes;
 
     // `mana_current`/`mana_max` sempre clampados juntos: se qualquer um dos
     // dois vier no body, recalcula `mana_current` contra o `mana_max`
