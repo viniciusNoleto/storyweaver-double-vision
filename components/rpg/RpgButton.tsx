@@ -1,8 +1,18 @@
 import { Button, ButtonProps } from '@mantine/core';
 import { cn } from '@/libs/utils';
 
+// `component`/`href`/`target` não fazem parte de `ButtonProps` (o Button do
+// Mantine é polimórfico — esses props vêm do wrapper de polimorfismo, não do
+// tipo de props "base"). Declarados aqui manualmente pra RpgButton continuar
+// aceitando `component={Link} href="..."` como o Button original aceita.
 export interface RpgButtonProps extends Omit<ButtonProps, 'variant' | 'color'> {
   tone?: 'cta' | 'ghost';
+  // Button do Mantine é polimórfico (union discriminada gigante por
+  // `component`); `any` aqui é o mesmo trade-off que o próprio Mantine
+  // documenta pra wrappers deste tipo.
+  component?: any;
+  href?: string;
+  target?: string;
 }
 
 // Wrapper visual fino sobre o Button do Mantine — toda a lógica/props do
