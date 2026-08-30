@@ -180,3 +180,13 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .rpg-front.fx-heal{animation:fxHeal .55s ease}
 .rpg-front.fx-heal::after{content:"";position:absolute;inset:0;z-index:15;pointer-events:none;background:rgba(122,180,110,.32);animation:fxFade .55s ease}
 @keyframes fxFade{0%{opacity:1}100%{opacity:0}}
+
+/* --- TableBoard: tabuleiro livre com drag + snap de 60px (canvas linhas 68-77, 144-145, 73-76) --- */
+.board{max-width:1400px;min-height:calc(100vh - 68px);margin:0 auto;padding:24px 28px 60px;position:relative}
+.board.gm-canvas::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .35s ease;background-image:linear-gradient(color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px),linear-gradient(90deg, color-mix(in srgb, var(--border) 55%, transparent) 1px, transparent 1px);background-size:60px 60px}
+.board.gm-canvas.is-dragging::before{opacity:1}
+.move-handle{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:6;width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--bg2);color:var(--text-dim);display:flex;align-items:center;justify-content:center;cursor:grab;opacity:0;transition:opacity .18s ease;pointer-events:none}
+.rpg-card-shell:hover .move-handle{opacity:1;pointer-events:auto}
+.rpg-card-shell{position:absolute;cursor:pointer;transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .28s ease}
+.rpg-card-shell.dragging{cursor:grabbing;z-index:20;transition:none !important}
+.rpg-card-shell:hover{transform:scale(1.09);z-index:2}
