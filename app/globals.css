@@ -194,3 +194,15 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .rpg-card-shell{position:absolute;cursor:pointer;transition:transform .28s cubic-bezier(.16,1,.3,1), opacity .28s ease}
 .rpg-card-shell.dragging{cursor:grabbing;z-index:20;transition:none !important}
 .rpg-card-shell:hover{transform:scale(1.09);z-index:2}
+
+/* --- CharacterEditModal: 3 páginas com dots (canvas linhas 393-419, 413-416) --- */
+.edit-lbl{display:flex;flex-direction:column;gap:3px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-faint)}
+.edit-lbl .field{margin-top:1px}
+.attr-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.attr-lbl .field{padding:5px 6px}
+.edit-page-dots{display:flex;gap:6px;justify-content:center;margin:2px 0 4px}
+.edit-page-dot{width:7px;height:7px;border-radius:50%;background:var(--border)}
+.edit-page-dot.active{background:var(--gold);box-shadow:0 0 8px var(--gold-dim)}
+.edit-section-label{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--gold-dim);font-weight:600;margin:6px 0 -2px;padding-top:10px;border-top:1px solid var(--border)}
+.wiz-back{background:none;border:none;color:var(--text-faint);font-size:12px;cursor:pointer;align-self:flex-start;text-decoration:underline;padding:0}
+.wiz-resource-line{font-size:12.5px;color:var(--text-dim);margin:2px 0}
