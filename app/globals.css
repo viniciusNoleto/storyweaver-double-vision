@@ -318,3 +318,13 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .home-glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(1000px 600px at 50% 30%, rgba(201,162,39,.12), transparent 65%)}
 .home-content{max-width:560px;display:flex;flex-direction:column;align-items:center;gap:18px;position:relative;z-index:1}
 .home-content h1{font-size:clamp(36px,5vw,54px);color:var(--gold-light);letter-spacing:.04em;text-shadow:0 2px 30px rgba(0,0,0,.6)}
+
+/* --- Mesas list (Task 16) --- */
+.board.tables-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));align-content:start;gap:18px}
+.card{background:linear-gradient(160deg, var(--bg3), var(--bg2));border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-deep);padding:16px;display:flex;flex-direction:column;gap:12px}
+.card:hover{border-color:var(--gold-dim)}
+.add-form{background:linear-gradient(160deg, var(--bg3), var(--bg2));border:1px dashed var(--gold-dim);border-radius:6px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--heading);font-size:18px;color:var(--gold-light)}
+.table-card h3{font-size:18px;color:var(--gold-light);flex:1;min-width:0}
+.table-card .meta{font-size:12.5px;color:var(--text-faint);display:flex;align-items:center;gap:6px}
+.table-actions{display:flex;gap:8px;margin-top:auto}
