@@ -328,3 +328,12 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .table-card h3{font-size:18px;color:var(--gold-light);flex:1;min-width:0}
 .table-card .meta{font-size:12.5px;color:var(--text-faint);display:flex;align-items:center;gap:6px}
 .table-actions{display:flex;gap:8px;margin-top:auto}
+
+/* Tela de Exibição — telão/TV público (app/mesa/[code]/exibicao/page.tsx) */
+.display-body{min-height:100vh;padding:40px 5vw;position:relative}
+.display-glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(1400px 800px at 50% -10%, rgba(201,162,39,.08), transparent 60%)}
+.display-title{font-size:clamp(30px,4vw,52px);color:var(--gold-light);text-align:center;letter-spacing:.04em;text-shadow:0 2px 30px rgba(0,0,0,.6)}
+.display-front-grid{max-width:1500px;margin:36px auto 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:24px}
+.display-chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.display-chip{font-size:13px;padding:5px 11px;border-radius:14px;border:1px solid var(--gold-dim);color:var(--gold-light);background:rgba(0,0,0,.2);display:inline-flex;align-items:center;gap:5px}
+.empty-display{text-align:center;color:var(--text-faint);font-size:16px;margin-top:80px;font-style:italic}
