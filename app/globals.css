@@ -300,3 +300,15 @@ h1,h2,h3,h4{font-family:var(--heading);font-weight:600;margin:0}
 .wiz-resource-card i{color:var(--gold);font-size:18px;margin-bottom:2px}
 .wiz-resource-val{font-family:var(--heading);color:var(--gold-light);font-size:15px}
 .wiz-resource-lbl{font-size:9.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.03em}
+
+/* --- Tela do Mestre: topbar sticky, fundo de madeira desfocado, zoom (canvas linha 61, 520-529) --- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 28px;border-bottom:1px solid var(--border);background:linear-gradient(to bottom, rgba(0,0,0,.3), transparent);position:sticky;top:0;z-index:5;backdrop-filter:blur(6px)}
+.table-bg{min-height:100vh;position:relative}
+.table-bg::before{content:"";position:fixed;inset:0;z-index:-1;background:
+  linear-gradient(rgba(10,7,4,.78), rgba(10,7,4,.85)),
+  url('/assets/table-bg.jpg');
+  background-size:cover;background-position:center;filter:blur(6px);transform:scale(1.05)}
+.table-title-input{background:transparent;border:none;font-family:var(--heading);font-size:26px;color:var(--gold-light);padding:4px 2px;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.card-zoom{display:flex;align-items:center;gap:6px;padding:0 4px;border-right:1px solid var(--border);margin-right:4px}
+.card-zoom-pct{font-size:12px;color:var(--text-dim);min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+.zoom-slider{width:90px;accent-color:var(--gold-dim);cursor:pointer}
