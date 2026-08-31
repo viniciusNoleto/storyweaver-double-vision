@@ -1,6 +1,5 @@
 import type { ECharacterType } from '../enums/CharacterType';
 import type { EStatusEffect } from '../enums/StatusEffect';
-import type { ICharacterAttributes } from './RulesContent';
 
 // Ver `.claude/rules/table-concept.md` seção 3 ("Redação de privacidade") e
 // seção 6 (decisão registrada) para o porquê de existirem DOIS formatos.
@@ -24,11 +23,9 @@ interface ICharacterBase {
   name: string;
   image_url: string | null;
   type: `${ECharacterType}`;
-  // Posição livre no tabuleiro, em pixels. Seguro em ambos os formatos — não
-  // é um número de jogo, é só organização visual (mesmo raciocínio que
-  // zone_id tinha antes).
-  position_x: number;
-  position_y: number;
+  // Divisão/zona do tabuleiro à qual o personagem pertence. Seguro em ambos
+  // os formatos — não é um número de jogo, é só organização visual.
+  zone_id: number;
   status_effects: EStatusEffect[];
   created_at: string | null;
   updated_at: string | null;
@@ -61,11 +58,6 @@ export interface ICharacterMaster extends ICharacterBase, ICharacterMana {
   // (já embutido) no `hp_color`/`is_defeated` calculados no servidor.
   extra_hp: number;
   visible: boolean;
-  class_id: number | null;
-  species_id: number | null;
-  origin_id: number | null;
-  level: number;
-  attributes: ICharacterAttributes | null;
 }
 
 // Visão de Exibição — NUNCA inclua hp_current/hp_max aqui, nem em campos

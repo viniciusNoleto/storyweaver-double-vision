@@ -1,12 +1,12 @@
 import { db } from '@/libs/db';
-import { tables, tablePublicColumns, characters } from '@/db/schema';
+import { tables, tablePublicColumns, characters, tableZones } from '@/db/schema';
 import { publish } from '@/libs/realtime';
 import { healthColor } from '@/resources/character/models/HealthColor';
 import type { ICharacterDisplay, ICharacterMaster } from '@/resources/character/models/Character';
-import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
+import type { ITableZone } from '@/resources/table/models/TableZone';
 import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import type { EStatusEffect } from '@/resources/character/enums/StatusEffect';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
 // App de uso pessoal (um único dono, sem contas) — não há mais checagem de
@@ -38,6 +38,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     const forcedDisplay = new URL(request.url).searchParams.get('view') === 'display';
     const isMaster = !forcedDisplay;
 
+    const zoneRows = await db
+      .select()
+      .from(tableZones)
+      .where(eq(tableZones.table_id, table.id))
+      .orderBy(asc(tableZones.position));
+
+    const zones: ITableZone[] = zoneRows.map((z) => ({ id: z.id, table_id: z.table_id, position: z.position }));
+
     const characterRows = await db
       .select()
       .from(characters)
@@ -51,8 +59,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
         name: c.name,
         image_url: c.image_url,
         type: c.type as `${ECharacterType}`,
-        position_x: c.position_x,
-        position_y: c.position_y,
+        zone_id: c.zone_id,
         hp_current: c.hp_current,
         hp_max: c.hp_max,
         extra_hp: c.extra_hp,
@@ -63,11 +70,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
         has_mana: c.has_mana,
         mana_current: c.mana_current,
         mana_max: c.mana_max,
-        class_id: c.class_id,
-        species_id: c.species_id,
-        origin_id: c.origin_id,
-        level: c.level,
-        attributes: c.attributes as ICharacterAttributes | null,
         created_at: c.created_at ? c.created_at.toISOString() : null,
         updated_at: c.updated_at ? c.updated_at.toISOString() : null,
       }))
@@ -79,8 +81,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
           name: c.name,
           image_url: c.image_url,
           type: c.type as `${ECharacterType}`,
-          position_x: c.position_x,
-          position_y: c.position_y,
+          zone_id: c.zone_id,
           // hp_current/hp_max/extra_hp NUNCA entram aqui, nem ocultos — só o
           // resultado já calculado de HealthColor.ts (que já incorpora
           // extra_hp no numerador/denominador). Ver regra de produto em
@@ -104,7 +105,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     return NextResponse.json({
       success: true,
       message: { 'pt-br': 'Operação realizada com sucesso.', 'es-mx': 'Operación realizada con éxito.', 'en-us': 'Operation completed successfully.' },
-      data: { table, you: { is_master: isMaster }, characters: characterList },
+      data: { table, you: { is_master: isMaster }, zones, characters: characterList },
     });
   } catch (e) {
     console.error(e);
@@ -113,10 +114,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   }
 }
 
-// Apaga a Mesa e tudo que pertence a ela (personagens). Sem `ON DELETE
-// CASCADE` no schema (ver `db/schema/`), então a ordem de exclusão respeita
-// as foreign keys — personagens antes da Mesa — dentro de uma única
-// transação.
+// Apaga a Mesa e tudo que pertence a ela (personagens e zonas). Sem `ON
+// DELETE CASCADE` no schema (ver `db/schema/`), então a ordem de exclusão
+// respeita as foreign keys — personagens antes das zonas, zonas antes da
+// Mesa — dentro de uma única transação.
 export async function DELETE(_request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
@@ -128,6 +129,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     await db.transaction(async (tx) => {
       await tx.delete(characters).where(eq(characters.table_id, table.id));
+      await tx.delete(tableZones).where(eq(tableZones.table_id, table.id));
       await tx.delete(tables).where(eq(tables.id, table.id));
     });
 

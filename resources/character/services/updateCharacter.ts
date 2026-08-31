@@ -7,8 +7,7 @@ import type { EStatusEffect } from '../enums/StatusEffect';
 export type UpdateCharacterServicePayload = {
   name?: string;
   image_url?: string | null;
-  position_x?: number;
-  position_y?: number;
+  zone_id?: number;
   type?: `${ECharacterType}`;
   hp_current?: number;
   hp_max?: number;
@@ -23,11 +22,10 @@ export type UpdateCharacterServicePayload = {
   has_mana?: boolean;
   mana_current?: number;
   mana_max?: number;
-  attributes?: import('../models/RulesContent').ICharacterAttributes | null;
 };
 
-// Só o Mestre pode chamar. Usado tanto pelo painel de edição de ficha quanto
-// pelo drag livre no tabuleiro (arrastar só altera `position_x`/`position_y`).
+// Usado tanto pelo painel de edição de ficha quanto pelo drag entre zonas no
+// tabuleiro (arrastar só altera `zone_id`).
 export function updateCharacterService({ code, characterId, body }: PayloadBody<UpdateCharacterServicePayload> & { code: string; characterId: number }) {
   return appClient.patch<ICharacterMaster>(`/api/tables/${code}/characters/${characterId}`, { body });
 }

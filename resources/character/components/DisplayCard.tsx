@@ -6,18 +6,31 @@ import { ManaCrystals } from './ManaCrystals';
 import { StatusEffectBadge } from './StatusEffectBadge';
 import type { ICharacterDisplay } from '../models/Character';
 
+// Fx de dano/cura/vida-extra da Tela de Exibição — mesmas 4 animações do
+// `CharacterCard` (ver `CharacterCardFx` e `app/globals.css`, bloco "fx de
+// dano/cura/vida extra"), mas com um tipo próprio: a Exibição nunca lida com
+// mana-gain/mana-loss aqui (o `ManaCrystals` já anima sozinho a partir do
+// snapshot, sem depender de evento).
+export interface DisplayCardFx {
+  type: 'damage' | 'heal' | 'extra-add' | 'extra-remove';
+  token: number;
+}
+
 // Frente travada da carta — subconjunto do `CharacterCard` (Tela do Mestre)
 // sem flip, sem ícones de ação e sem hover. Recebe SOMENTE `ICharacterDisplay`
 // (nunca `ICharacterMaster`) — `hp_color`/`is_defeated` já vêm calculados do
 // servidor, então este componente nunca vê nem calcula um número de HP. Ver
 // `.claude/rules/table-concept.md` seção 2 ("nenhum número de jogo na
 // Exibição").
-export function DisplayCard({ character: c }: { character: ICharacterDisplay }) {
+export function DisplayCard({ character: c, fx = null }: { character: ICharacterDisplay; fx?: DisplayCardFx | null }) {
   const conditionClass = (condition: EStatusEffect) => c.status_effects.includes(condition);
+
+  const fxClass = fx ? `fx-${fx.type}` : '';
 
   return (
     <div
-      className="rpg-face rpg-front"
+      key={fx?.token}
+      className={`rpg-face rpg-front ${fxClass}`}
       style={{ position: 'relative', width: 220, height: 315, borderColor: c.hp_color, boxShadow: `0 0 0 1px rgba(0,0,0,.4), 0 12px 26px rgba(0,0,0,.5), 0 0 18px ${c.hp_color}55` }}
     >
       <div className={`rpg-portrait-fill ${c.is_defeated ? 'dead' : ''} ${conditionClass(EStatusEffect.ATORDOADO) ? 'dizzy' : ''} ${conditionClass(EStatusEffect.PRESO) ? 'trapped' : ''} ${conditionClass(EStatusEffect.ENFEITICADO) ? 'enchanted' : ''} ${conditionClass(EStatusEffect.DORMINDO) ? 'asleep' : ''}`}>
@@ -26,6 +39,7 @@ export function DisplayCard({ character: c }: { character: ICharacterDisplay }) 
           <img
             src={c.image_url}
             alt={c.name}
+            draggable={false}
           />
         ) : null}
       </div>

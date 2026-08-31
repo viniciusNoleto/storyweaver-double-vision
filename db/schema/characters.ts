@@ -1,5 +1,6 @@
 import { boolean, integer, jsonb, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
 import { tables } from './tables';
+import { tableZones } from './table_zones';
 
 export const characters = pgTable('characters', {
   id: serial('id').primaryKey(),
@@ -10,11 +11,10 @@ export const characters = pgTable('characters', {
   // vez do antigo par kind character/npc). Puramente organizacional/visual
   // (badge de tipo), sem regra de jogo diferente entre os 3 valores.
   type: varchar('type', { length: 20 }).notNull().default('PC'),
-  // Posicionamento livre no tabuleiro (substitui zone_id/table_zones — canvas
-  // usa drag livre com snap de 60px feito no client). Em pixels, relativo ao
-  // container do tabuleiro.
-  position_x: integer('position_x').notNull().default(20),
-  position_y: integer('position_y').notNull().default(20),
+  // Divisão/zona do tabuleiro à qual o personagem pertence — as fichas de
+  // uma mesma zona se auto-organizam centralizadas (flex-wrap), sem
+  // posicionamento livre por pixel.
+  zone_id: integer('zone_id').notNull().references(() => tableZones.id),
   hp_current: integer('hp_current').notNull().default(0),
   hp_max: integer('hp_max').notNull().default(1),
   extra_hp: integer('extra_hp').notNull().default(0),
@@ -25,11 +25,6 @@ export const characters = pgTable('characters', {
   has_mana: boolean('has_mana').notNull().default(false),
   mana_current: integer('mana_current').notNull().default(0),
   mana_max: integer('mana_max').notNull().default(0),
-  class_id: integer('class_id'),
-  species_id: integer('species_id'),
-  origin_id: integer('origin_id'),
-  level: integer('level').notNull().default(1),
-  attributes: jsonb('attributes'),
   created_at: timestamp('created_at'),
   updated_at: timestamp('updated_at'),
 });

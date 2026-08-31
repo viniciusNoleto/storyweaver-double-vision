@@ -1,6 +1,6 @@
 import { randomBytes } from 'crypto';
 import { db } from '@/libs/db';
-import { tables, tablePublicColumns } from '@/db/schema';
+import { tables, tablePublicColumns, tableZones } from '@/db/schema';
 import { hashMasterKey } from '@/libs/tableAuth';
 import { setMasterSessionCookie } from '@/libs/session';
 import { ETableStatus } from '@/resources/table/enums/TableStatus';
@@ -67,11 +67,19 @@ export async function POST(request: Request) {
     const masterKeyHash = hashMasterKey(masterKey);
     const now = new Date();
 
-    await db.insert(tables).values({
+    const [table] = await db.insert(tables).values({
       code,
       master_key_hash: masterKeyHash,
       name: name || null,
       status: ETableStatus.ACTIVE,
+      created_at: now,
+    }).returning({ id: tables.id });
+
+    // Toda Mesa nasce com 1 divisão (position 0) — o Mestre pode adicionar
+    // ou remover depois (ver `app/api/tables/[code]/zones/route.ts`).
+    await db.insert(tableZones).values({
+      table_id: table.id,
+      position: 0,
       created_at: now,
     });
 

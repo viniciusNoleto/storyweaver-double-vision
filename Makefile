@@ -1,7 +1,6 @@
 include .env
 
 DOCKERFILE := docker-compose.${APP_ENV}.yml
-APP_NAME := storyweaver-front
 
 f :=
 art:
@@ -43,6 +42,9 @@ logs:
 c :=
 exec:
 	@docker compose -f $(DOCKERFILE) exec $(APP_NAME) $(c)
+
+in-front:
+	@docker compose -f $(DOCKERFILE) exec storyweaver-front /bin/sh
 
 b ?=
 npm-install:

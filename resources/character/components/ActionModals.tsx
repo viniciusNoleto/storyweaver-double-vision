@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Sword, Heart, ShieldPlus, Sparkle, Plus, Minus, Check } from '@phosphor-icons/react';
+import { Sword, Heart, ShieldPlus, Sparkle, Drop, Plus, Minus, Check } from '@phosphor-icons/react';
 import { Modal } from '@/components/vilgard/Modal';
 import { Button } from '@/components/vilgard/Button';
 import { Field } from '@/components/vilgard/Field';
@@ -14,7 +14,7 @@ import { EStatusEffect } from '../enums/StatusEffect';
 import { STATUS_EFFECT_VISUAL } from '../models/StatusEffectVisual';
 import type { ICharacterMaster } from '../models/Character';
 
-export type ActionModalKind = 'dano' | 'cura' | 'vida-extra' | 'estado' | null;
+export type ActionModalKind = 'dano' | 'cura' | 'vida-extra' | 'mana' | 'estado' | null;
 
 export interface ActionModalsProps {
   code: string;
@@ -30,7 +30,7 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
   const queryClient = useQueryClient();
 
   const actionMutation = useMutation({
-    mutationFn: (body: { type: 'damage' | 'heal' | 'extra-add' | 'extra-remove'; amount: number }) => {
+    mutationFn: (body: { type: 'damage' | 'heal' | 'extra-add' | 'extra-remove' | 'mana-spend' | 'mana-restore'; amount: number }) => {
       if (!character) return Promise.reject(new Error('sem personagem'));
 
       return applyCharacterActionService({ code, characterId: character.id, body });
@@ -192,6 +192,59 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
           <Minus weight="bold" />
 
           Retirar
+        </Button>
+      </Modal>
+
+      <Modal
+        open={open === 'mana'}
+        onClose={onClose}
+        fullscreen
+        accentColor="#4a8cc7"
+      >
+        <p className="card-modal-title">
+          <Drop weight="fill" />
+
+          {`Mana de ${character.name}`}
+        </p>
+
+        {error ? (
+          <ErrorBanner
+            message={error}
+            onDismiss={() => setError(null)}
+          />
+        ) : null}
+
+        <p style={{ opacity: 0.75, fontSize: 13 }}>
+          {`Atual: ${character.mana_current}/${character.mana_max}`}
+        </p>
+
+        <Field
+          type="number"
+          min={0}
+          placeholder="Quantidade"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          autoFocus
+        />
+
+        <Button
+          variant="primary"
+          onClick={() => actionMutation.mutate({ type: 'mana-restore', amount: Number(amount) || 0 })}
+          disabled={actionMutation.isPending}
+        >
+          <Plus weight="bold" />
+
+          Restaurar
+        </Button>
+
+        <Button
+          variant="ghost"
+          onClick={() => actionMutation.mutate({ type: 'mana-spend', amount: Number(amount) || 0 })}
+          disabled={actionMutation.isPending}
+        >
+          <Minus weight="bold" />
+
+          Gastar
         </Button>
       </Modal>
 

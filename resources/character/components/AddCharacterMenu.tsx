@@ -91,7 +91,7 @@ export function AddCharacterMenu({
                 </span>
 
                 <span className="wiz-opt-sub">
-                  Um herói jogável, com espécie, classe e origem
+                  Um herói jogável
                 </span>
               </span>
 

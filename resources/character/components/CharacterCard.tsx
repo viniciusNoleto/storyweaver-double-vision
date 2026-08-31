@@ -1,34 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Sword, Heart, ShieldPlus, Sparkle, PencilSimple, Skull, Radioactive } from '@phosphor-icons/react';
+import { Sword, Heart, ShieldPlus, Sparkle, Drop, PencilSimple, Skull, Radioactive } from '@phosphor-icons/react';
 import type { ICharacterMaster } from '../models/Character';
 import { healthColor, healthPercent } from '../models/HealthColor';
-import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL, ATTRIBUTE_ABBR } from '../enums/Attribute';
 import { EStatusEffect } from '../enums/StatusEffect';
 import { STATUS_EFFECT_VISUAL } from '../models/StatusEffectVisual';
 import { ManaCrystals } from './ManaCrystals';
 import { StatusEffectBadge } from './StatusEffectBadge';
 import { IconButton } from '@/components/vilgard/IconButton';
 import { Switch } from '@/components/vilgard/Switch';
-import type { IExtraResource } from '../models/RulesContent';
 
 export interface CharacterCardFx {
-  type: 'damage' | 'heal' | 'mana-gain' | 'mana-loss';
+  type: 'damage' | 'heal' | 'extra-add' | 'extra-remove' | 'mana-gain' | 'mana-loss';
   token: number;
 }
 
 export interface CharacterCardProps {
   character: ICharacterMaster;
   fx: CharacterCardFx | null;
-  // Recursos da classe do personagem (ex: "2d6 Dano curto") — mostrados como
-  // abas ao lado da carta quando ela está virada e em hover. Vazio/ausente
-  // simplesmente não mostra nada (personagem sem classe, ex: NPC).
-  classResources?: IExtraResource[];
   onManaClick: (value: number) => void;
   onOpenDano: () => void;
   onOpenCura: () => void;
   onOpenVidaExtra: () => void;
+  onOpenMana: () => void;
   onOpenEstado: () => void;
   onOpenEdit: () => void;
   onToggleVisible: () => void;
@@ -38,11 +33,11 @@ export interface CharacterCardProps {
 export function CharacterCard({
   character: c,
   fx,
-  classResources = [],
   onManaClick,
   onOpenDano,
   onOpenCura,
   onOpenVidaExtra,
+  onOpenMana,
   onOpenEstado,
   onOpenEdit,
   onToggleVisible,
@@ -61,7 +56,6 @@ export function CharacterCard({
   const fxClass = fx ? `fx-${fx.type}` : '';
 
   return (
-    <>
     <div className="rpg-flip-viewport">
       <div className={`rpg-flip-inner ${flipped ? 'flipped' : ''}`}>
         {/* FRENTE */}
@@ -77,6 +71,7 @@ export function CharacterCard({
               <img
                 src={c.image_url}
                 alt={c.name}
+                draggable={false}
               />
             ) : null}
           </div>
@@ -194,6 +189,18 @@ export function CharacterCard({
                 <ShieldPlus weight="fill" />
               </button>
 
+              {c.has_mana ? (
+                <button
+                  type="button"
+                  className="hover-icon"
+                  style={{ '--act-color': 'var(--mana-blue)' } as React.CSSProperties}
+                  onClick={(e) => { e.stopPropagation(); onOpenMana(); }}
+                  title="Mana"
+                >
+                  <Drop weight="fill" />
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 className="hover-icon"
@@ -263,24 +270,6 @@ export function CharacterCard({
             </div>
           </div>
 
-          <div className="attr-grid">
-            {c.attributes ? ATTRIBUTE_ORDER.map((attribute) => (
-              <div
-                key={attribute}
-                className="attr-cell"
-                title={ATTRIBUTE_LABEL[attribute]}
-              >
-                <span className="al">
-                  {ATTRIBUTE_ABBR[attribute]}
-                </span>
-
-                <span className="av">
-                  {c.attributes![attribute]}
-                </span>
-              </div>
-            )) : null}
-          </div>
-
           <div className="chips">
             {c.status_effects.map((effect) => {
               const visual = STATUS_EFFECT_VISUAL[effect];
@@ -332,6 +321,18 @@ export function CharacterCard({
                 <ShieldPlus weight="fill" />
               </button>
 
+              {c.has_mana ? (
+                <button
+                  type="button"
+                  className="hover-icon"
+                  style={{ '--act-color': 'var(--mana-blue)' } as React.CSSProperties}
+                  onClick={onOpenMana}
+                  title="Mana"
+                >
+                  <Drop weight="fill" />
+                </button>
+              ) : null}
+
               <button
                 type="button"
                 className="hover-icon"
@@ -359,24 +360,5 @@ export function CharacterCard({
         </div>
       </div>
     </div>
-
-    {classResources.length > 0 ? (
-      <div className="class-tabs">
-        {classResources.map((resource) => (
-          <div
-            key={resource.label}
-            className="class-tab"
-            title={resource.label}
-          >
-            <Sparkle weight="fill" />
-
-            <span>
-              {resource.value}
-            </span>
-          </div>
-        ))}
-      </div>
-    ) : null}
-    </>
   );
 }

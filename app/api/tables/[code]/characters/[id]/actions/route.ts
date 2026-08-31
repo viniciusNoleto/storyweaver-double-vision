@@ -2,7 +2,6 @@ import { db } from '@/libs/db';
 import { tables, characters } from '@/db/schema';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
-import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
 import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import type { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import { and, eq } from 'drizzle-orm';
@@ -19,8 +18,7 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     name: c.name,
     image_url: c.image_url,
     type: c.type as `${ECharacterType}`,
-    position_x: c.position_x,
-    position_y: c.position_y,
+    zone_id: c.zone_id,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
     extra_hp: c.extra_hp,
@@ -29,11 +27,6 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     has_mana: c.has_mana,
     mana_current: c.mana_current,
     mana_max: c.mana_max,
-    class_id: c.class_id,
-    species_id: c.species_id,
-    origin_id: c.origin_id,
-    level: c.level,
-    attributes: c.attributes as ICharacterAttributes | null,
     created_at: c.created_at ? c.created_at.toISOString() : null,
     updated_at: c.updated_at ? c.updated_at.toISOString() : null,
   };

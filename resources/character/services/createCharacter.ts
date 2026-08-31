@@ -8,8 +8,6 @@ export type CreateCharacterServicePayload = {
   name: string;
   image_url?: string | null;
   type?: `${ECharacterType}`;
-  position_x?: number;
-  position_y?: number;
   hp_current?: number;
   hp_max?: number;
   // Vida extra — bônus separado da vida normal (ver
@@ -23,11 +21,6 @@ export type CreateCharacterServicePayload = {
   has_mana?: boolean;
   mana_current?: number;
   mana_max?: number;
-  class_id?: number | null;
-  species_id?: number | null;
-  origin_id?: number | null;
-  level?: number;
-  attributes?: import('./../models/RulesContent').ICharacterAttributes | null;
 };
 
 // Só o Mestre pode chamar (a rota valida via cookie — ver

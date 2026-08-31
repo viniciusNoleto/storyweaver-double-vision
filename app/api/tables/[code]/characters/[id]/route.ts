@@ -1,8 +1,7 @@
 import { db } from '@/libs/db';
-import { tables, characters } from '@/db/schema';
+import { tables, characters, tableZones } from '@/db/schema';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
-import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
 import type { ECharacterType } from '@/resources/character/enums/CharacterType';
 import { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import { and, eq } from 'drizzle-orm';
@@ -15,8 +14,7 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     name: c.name,
     image_url: c.image_url,
     type: c.type as `${ECharacterType}`,
-    position_x: c.position_x,
-    position_y: c.position_y,
+    zone_id: c.zone_id,
     hp_current: c.hp_current,
     hp_max: c.hp_max,
     extra_hp: c.extra_hp,
@@ -25,11 +23,6 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
     has_mana: c.has_mana,
     mana_current: c.mana_current,
     mana_max: c.mana_max,
-    class_id: c.class_id,
-    species_id: c.species_id,
-    origin_id: c.origin_id,
-    level: c.level,
-    attributes: c.attributes as ICharacterAttributes | null,
     created_at: c.created_at ? c.created_at.toISOString() : null,
     updated_at: c.updated_at ? c.updated_at.toISOString() : null,
   };
@@ -92,8 +85,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     if ('image_url' in body) updates.image_url = typeof body.image_url === 'string' ? body.image_url : null;
 
     if (typeof body.type === 'string' && ['PC', 'NPC', 'Monstro'].includes(body.type)) updates.type = body.type;
-    if (typeof body.position_x === 'number') updates.position_x = body.position_x;
-    if (typeof body.position_y === 'number') updates.position_y = body.position_y;
+
+    if (typeof body.zone_id === 'number') {
+      // Só aceita mover para uma zona que pertença à MESMA Mesa — evita
+      // vazar um personagem para o tabuleiro de outra Mesa via id adivinhado.
+      const [targetZone] = await db
+        .select({ id: tableZones.id })
+        .from(tableZones)
+        .where(and(eq(tableZones.id, body.zone_id), eq(tableZones.table_id, table.id)));
+
+      if (!targetZone) {
+        return NextResponse.json({ success: false, message: { 'pt-br': 'Divisão inválida.', 'es-mx': 'División inválida.', 'en-us': 'Invalid zone.' }, data: null }, { status: 422 });
+      }
+
+      updates.zone_id = targetZone.id;
+    }
 
     // `hp_current`/`hp_max` sempre clampados juntos, mesmo padrão de
     // `mana_current`/`mana_max` logo abaixo: se qualquer um dos dois vier no
@@ -113,7 +119,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     if (Array.isArray(body.status_effects)) updates.status_effects = sanitizeStatusEffects(body.status_effects);
     if (typeof body.visible === 'boolean') updates.visible = body.visible;
     if (typeof body.has_mana === 'boolean') updates.has_mana = body.has_mana;
-    if (body.attributes && typeof body.attributes === 'object') updates.attributes = body.attributes;
 
     // `mana_current`/`mana_max` sempre clampados juntos: se qualquer um dos
     // dois vier no body, recalcula `mana_current` contra o `mana_max`

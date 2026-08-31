@@ -6,18 +6,16 @@ import { Check } from '@phosphor-icons/react';
 import { Modal } from '@/components/vilgard/Modal';
 import { Button } from '@/components/vilgard/Button';
 import { Field } from '@/components/vilgard/Field';
-import { Switch } from '@/components/vilgard/Switch';
 import { ErrorBanner } from '@/components/vilgard/ErrorBanner';
 import { ImageUploadInput } from './ImageUploadInput';
 import { createCharacterService } from '../services/createCharacter';
 import { ECharacterType } from '../enums/CharacterType';
 import type { ICharacterMaster } from '../models/Character';
 
-// Criação rápida de NPC: mesmo endpoint de sempre, formulário reduzido a 4
-// campos (nome, foto, vida máxima, vida atual). Espécie/classe/origem ficam
-// de fora — quem precisar de uma ficha completa usa "Editar ficha" depois
-// que o NPC já estiver na mesa.
-export function CreateNpcModal({
+// Criação de Personagem: mesmo formulário reduzido do NPC (nome, foto, vida
+// máxima), mais o campo extra de mana máxima (0 por padrão) — substitui o
+// antigo wizard guiado por espécie/classe/origem/atributos.
+export function CreateCharacterModal({
   code,
   opened,
   onCancel,
@@ -31,14 +29,14 @@ export function CreateNpcModal({
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [hpMax, setHpMax] = useState(1);
-  const [visible, setVisible] = useState(true);
+  const [manaMax, setManaMax] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   function reset() {
     setName('');
     setImageUrl('');
     setHpMax(1);
-    setVisible(true);
+    setManaMax(0);
     setError(null);
   }
 
@@ -53,10 +51,12 @@ export function CreateNpcModal({
       body: {
         name: name.trim(),
         image_url: imageUrl || null,
-        type: ECharacterType.NPC,
+        type: ECharacterType.PC,
         hp_current: hpMax,
         hp_max: hpMax,
-        visible,
+        has_mana: manaMax > 0,
+        mana_current: manaMax,
+        mana_max: manaMax,
       },
     }),
     onSuccess: (res) => {
@@ -66,7 +66,7 @@ export function CreateNpcModal({
       onCreated(created);
     },
     onError: (err: any) => {
-      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível criar o NPC. Tente novamente.');
+      setError(err?.data?.message?.['pt-br'] ?? 'Não foi possível criar o personagem. Tente novamente.');
     },
   });
 
@@ -77,7 +77,7 @@ export function CreateNpcModal({
       fullscreen
     >
       <p className="card-modal-title">
-        Novo NPC
+        Novo Personagem
       </p>
 
       {error ? (
@@ -88,7 +88,7 @@ export function CreateNpcModal({
       ) : null}
 
       <Field
-        placeholder="Nome do NPC *"
+        placeholder="Nome do personagem *"
         value={name}
         onChange={(e) => setName(e.target.value)}
         autoFocus
@@ -110,16 +110,16 @@ export function CreateNpcModal({
         />
       </label>
 
-      <div className="card-foot">
-        <span className="edit-lbl">
-          Visível na Exibição
-        </span>
+      <label className="edit-lbl">
+        Mana máxima
 
-        <Switch
-          checked={visible}
-          onChange={() => setVisible((v) => !v)}
+        <Field
+          type="number"
+          min={0}
+          value={manaMax}
+          onChange={(e) => setManaMax(Number(e.target.value) || 0)}
         />
-      </div>
+      </label>
 
       <Button
         variant="primary"
