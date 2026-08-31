@@ -1,6 +1,5 @@
 import { db } from '@/libs/db';
 import { tables, characters } from '@/db/schema';
-import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
@@ -41,7 +40,8 @@ function toCharacterMaster(c: typeof characters.$inferSelect): ICharacterMaster 
 }
 
 // Aplica dano/cura (hp), gasto/restauração de mana, ou adição/remoção de
-// vida extra a um personagem. Só o Mestre pode. `hp_current` sempre clampado
+// vida extra a um personagem. App de uso pessoal — sem checagem de Mestre.
+// `hp_current` sempre clampado
 // entre 0 e hp_max; `mana_current` sempre clampado entre 0 e mana_max — ações
 // de mana exigem `character.has_mana === true` (422 caso contrário).
 // `extra_hp` nunca vai abaixo de 0, sem teto superior (ver comentário em
@@ -62,11 +62,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa não encontrada.', 'es-mx': 'Mesa no encontrada.', 'en-us': 'Table not found.' }, data: null }, { status: 404 });
     }
 
-    const isMaster = await getCurrentMaster(tableCode, table.id);
-
-    if (!isMaster) {
-      return NextResponse.json({ success: false, message: { 'pt-br': 'Apenas o Mestre pode fazer isso.', 'es-mx': 'Solo el Máster puede hacer esto.', 'en-us': 'Only the Master can do this.' }, data: null }, { status: 401 });
-    }
 
     const body = await request.json().catch(() => ({}));
     const type = body?.type;

@@ -1,8 +1,8 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, MagnifyingGlassMinus, MagnifyingGlassPlus, Monitor, Plus, Trash } from '@phosphor-icons/react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, MagnifyingGlassMinus, MagnifyingGlassPlus, Monitor, Trash } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { useTableStream, UseTableStreamCharacterAction } from '@/resources/table/hooks/useTableStream';
 import { TableBoard } from '@/resources/character/components/TableBoard';
@@ -10,10 +10,16 @@ import { CharacterCard, CharacterCardFx } from '@/resources/character/components
 import { ActionModals, ActionModalKind } from '@/resources/character/components/ActionModals';
 import { CharacterEditModal } from '@/resources/character/components/CharacterEditModal';
 import { CharacterWizard } from '@/resources/character/components/CharacterWizard';
+import { AddCharacterMenu } from '@/resources/character/components/AddCharacterMenu';
+import { CharacterTemplatePicker } from '@/resources/character/components/CharacterTemplatePicker';
+import { CreateNpcModal } from '@/resources/character/components/CreateNpcModal';
+import { SaveCharacterTemplatePrompt, SaveCharacterTemplateCandidate } from '@/resources/character/components/SaveCharacterTemplatePrompt';
 import { updateCharacterService } from '@/resources/character/services/updateCharacter';
 import { deleteCharacterService } from '@/resources/character/services/deleteCharacter';
 import { applyCharacterActionService } from '@/resources/character/services/applyCharacterAction';
+import { getClassesService, GET_CLASSES_KEY } from '@/resources/character/services/getClasses';
 import { GET_TABLE_KEY } from '@/resources/table/services/getTable';
+import { ECharacterKind } from '@/resources/character/enums/CharacterKind';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import { Button } from '@/components/vilgard/Button';
 import { Modal } from '@/components/vilgard/Modal';
@@ -23,13 +29,36 @@ export default function MestrePage({ params }: { params: Promise<{ code: string 
   const { code } = use(params);
   const queryClient = useQueryClient();
 
+  const { data: classesData } = useQuery({ queryKey: GET_CLASSES_KEY, queryFn: getClassesService });
+  const classesById = new Map((classesData?.data ?? []).map((item) => [item.id, item]));
+
   const [cardScale, setCardScale] = useState(1);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [npcModalOpen, setNpcModalOpen] = useState(false);
+  const [pickerKind, setPickerKind] = useState<`${ECharacterKind}` | null>(null);
+  const [saveCandidate, setSaveCandidate] = useState<SaveCharacterTemplateCandidate | null>(null);
   const [actionState, setActionState] = useState<{ kind: ActionModalKind; characterId: number | null }>({ kind: null, characterId: null });
   const [editCharacterId, setEditCharacterId] = useState<number | null>(null);
   const [fxByCharacter, setFxByCharacter] = useState<Record<number, CharacterCardFx>>({});
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Depois de criar um Personagem (wizard) ou NPC (form simples) do zero,
+  // pergunta se quer salvar como molde reutilizável — não pergunta quando o
+  // personagem veio de um molde já salvo (CharacterTemplatePicker), já que
+  // nesse caso ele já está salvo.
+  function afterCreatedNew(kind: `${ECharacterKind}`, character: ICharacterMaster) {
+    setWizardOpen(false);
+    setNpcModalOpen(false);
+    setSaveCandidate({
+      kind,
+      name: character.name,
+      image_url: character.image_url,
+      hp_max: character.hp_max,
+      has_mana: character.has_mana,
+      mana_max: character.mana_max,
+    });
+  }
 
   const { data, isError, refetch } = useTableStream(code, {
     onCharacterAction: (action: UseTableStreamCharacterAction) => {
@@ -95,18 +124,8 @@ export default function MestrePage({ params }: { params: Promise<{ code: string 
 
   if (!data) return null;
 
-  if (!data.you.is_master) {
-    return (
-      <div className="table-bg">
-        <p
-          style={{ padding: 40, textAlign: 'center' }}
-        >
-          Apenas o Mestre pode acessar esta tela.
-        </p>
-      </div>
-    );
-  }
-
+  // App de uso pessoal — qualquer um com o link pode gerenciar a mesa, de
+  // qualquer navegador/dispositivo. Sem gate de "só o Mestre" aqui.
   const characters = data.characters as ICharacterMaster[];
   const activeCharacter = characters.find((c) => c.id === actionState.characterId) ?? null;
   const editCharacter = characters.find((c) => c.id === editCharacterId) ?? null;
@@ -161,13 +180,10 @@ export default function MestrePage({ params }: { params: Promise<{ code: string 
             Abrir telão
           </a>
 
-          <Button
-            variant="primary"
-            onClick={() => setWizardOpen(true)}
-          >
-            <Plus weight="bold" />
-            Nova carta
-          </Button>
+          <AddCharacterMenu
+            onCreateNew={(kind) => (kind === ECharacterKind.NPC ? setNpcModalOpen(true) : setWizardOpen(true))}
+            onUseSaved={(kind) => setPickerKind(kind)}
+          />
         </div>
       </header>
 
@@ -186,6 +202,7 @@ export default function MestrePage({ params }: { params: Promise<{ code: string 
           <CharacterCard
             character={character}
             fx={fxByCharacter[character.id] ?? null}
+            classResources={character.class_id ? classesById.get(character.class_id)?.extra_resources : undefined}
             onManaClick={(value) => manaMutation.mutate({ id: character.id, value, currentMana: character.mana_current })}
             onOpenDano={() => setActionState({ kind: 'dano', characterId: character.id })}
             onOpenCura={() => setActionState({ kind: 'cura', characterId: character.id })}
@@ -201,6 +218,7 @@ export default function MestrePage({ params }: { params: Promise<{ code: string 
       <Modal
         open={confirmDeleteId !== null}
         onClose={() => setConfirmDeleteId(null)}
+        fullscreen
       >
         <p className="card-modal-title">
           <Trash weight="bold" />
@@ -249,7 +267,27 @@ export default function MestrePage({ params }: { params: Promise<{ code: string 
         code={code}
         opened={wizardOpen}
         onCancel={() => setWizardOpen(false)}
-        onCreated={() => setWizardOpen(false)}
+        onCreated={(character) => afterCreatedNew(ECharacterKind.CHARACTER, character)}
+      />
+
+      <CreateNpcModal
+        code={code}
+        opened={npcModalOpen}
+        onCancel={() => setNpcModalOpen(false)}
+        onCreated={(character) => afterCreatedNew(ECharacterKind.NPC, character)}
+      />
+
+      <CharacterTemplatePicker
+        code={code}
+        kind={pickerKind ?? ECharacterKind.CHARACTER}
+        opened={pickerKind !== null}
+        onCancel={() => setPickerKind(null)}
+        onCreated={() => setPickerKind(null)}
+      />
+
+      <SaveCharacterTemplatePrompt
+        candidate={saveCandidate}
+        onDone={() => setSaveCandidate(null)}
       />
     </div>
   );

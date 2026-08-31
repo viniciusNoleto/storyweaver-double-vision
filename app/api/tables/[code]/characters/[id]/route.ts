@@ -1,6 +1,5 @@
 import { db } from '@/libs/db';
 import { tables, characters } from '@/db/schema';
-import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
@@ -47,27 +46,18 @@ function sanitizeStatusEffects(value: unknown): EStatusEffect[] {
   return value.filter((entry): entry is EStatusEffect => typeof entry === 'string' && validValues.includes(entry));
 }
 
-// Resolve a Mesa pelo `code` e se a requisição atual pertence ao Mestre dela.
-// Usado por PATCH e DELETE abaixo — as duas rotas exigem `isMaster === true`,
-// senão negam a mutação sem tocar no banco (ver table-concept.md seção 3).
-async function resolveTableAndMaster(tableCode: string) {
+// Resolve a Mesa pelo `code` — app de uso pessoal, sem checagem de Mestre
+// (ver table-concept.md).
+async function resolveTable(tableCode: string) {
   const [table] = await db.select({ id: tables.id }).from(tables).where(eq(tables.code, tableCode));
 
-  if (!table) return { table: null, isMaster: false };
-
-  const isMaster = await getCurrentMaster(tableCode, table.id);
-
-  return { table, isMaster };
+  return table ?? null;
 }
 
 // Cada chamada gera uma nova Response — nunca reutilize uma instância de
 // `NextResponse.json(...)` entre requisições (o corpo é um stream de uso único).
 function tableNotFound() {
   return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa não encontrada.', 'es-mx': 'Mesa no encontrada.', 'en-us': 'Table not found.' }, data: null }, { status: 404 });
-}
-
-function unauthorized() {
-  return NextResponse.json({ success: false, message: { 'pt-br': 'Apenas o Mestre pode fazer isso.', 'es-mx': 'Solo el Máster puede hacer esto.', 'en-us': 'Only the Master can do this.' }, data: null }, { status: 401 });
 }
 
 function characterNotFound() {
@@ -83,10 +73,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     const tableCode = code.toUpperCase();
     const characterId = Number(id);
 
-    const { table, isMaster } = await resolveTableAndMaster(tableCode);
+    const table = await resolveTable(tableCode);
 
     if (!table) return tableNotFound();
-    if (!isMaster) return unauthorized();
 
     const [existing] = await db
       .select()
@@ -176,10 +165,9 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const tableCode = code.toUpperCase();
     const characterId = Number(id);
 
-    const { table, isMaster } = await resolveTableAndMaster(tableCode);
+    const table = await resolveTable(tableCode);
 
     if (!table) return tableNotFound();
-    if (!isMaster) return unauthorized();
 
     const deleted = await db
       .delete(characters)

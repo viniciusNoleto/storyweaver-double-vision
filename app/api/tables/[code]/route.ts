@@ -1,6 +1,5 @@
 import { db } from '@/libs/db';
 import { tables, tablePublicColumns, characters } from '@/db/schema';
-import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import { healthColor } from '@/resources/character/models/HealthColor';
 import type { ICharacterDisplay, ICharacterMaster } from '@/resources/character/models/Character';
@@ -10,32 +9,21 @@ import type { EStatusEffect } from '@/resources/character/enums/StatusEffect';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-// Resolve a Mesa pelo `code` e se a requisição atual pertence ao Mestre dela —
-// mesmo padrão de `resolveTableAndMaster` em
-// `app/api/tables/[code]/characters/[id]/route.ts`. Usado por PATCH e DELETE
-// abaixo, que exigem `isMaster === true`.
-async function resolveTableAndMaster(tableCode: string) {
-  const [table] = await db.select({ id: tables.id }).from(tables).where(eq(tables.code, tableCode));
-
-  if (!table) return { table: null, isMaster: false };
-
-  const isMaster = await getCurrentMaster(tableCode, table.id);
-
-  return { table, isMaster };
-}
+// App de uso pessoal (um único dono, sem contas) — não há mais checagem de
+// "é o Mestre" em lugar nenhum: qualquer um com o link pode gerenciar a mesa
+// de qualquer navegador/dispositivo. A ÚNICA distinção que resta é
+// visual/de privacidade: `?view=display` (usado só pela Tela de Exibição)
+// continua pedindo o formato redigido (sem HP), nunca o formato completo —
+// essa parte não é sobre autenticação, é sobre nunca mostrar números de jogo
+// numa tela pública/telão. Ver `.claude/rules/table-concept.md` seção 2.
 
 function tableNotFound() {
   return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa não encontrada.', 'es-mx': 'Mesa no encontrada.', 'en-us': 'Table not found.' }, data: null }, { status: 404 });
 }
 
-function unauthorized() {
-  return NextResponse.json({ success: false, message: { 'pt-br': 'Apenas o Mestre pode fazer isso.', 'es-mx': 'Solo el Máster puede hacer esto.', 'en-us': 'Only the Master can do this.' }, data: null }, { status: 401 });
-}
-
 // Única rota de snapshot da Mesa (ver `.claude/rules/table-concept.md` seção 3,
-// "Redação de privacidade — uma única fonte, dois payloads"). Resolve o papel
-// via cookie (`getCurrentMaster`) e monta um shape de personagem diferente por
-// papel — nunca crie outra rota de snapshot com lógica de redação própria.
+// "Redação de privacidade — uma única fonte, dois payloads"). `?view=display`
+// decide o formato — nunca crie outra rota de snapshot com lógica própria.
 export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
@@ -47,13 +35,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa não encontrada.', 'es-mx': 'Mesa no encontrada.', 'en-us': 'Table not found.' }, data: null }, { status: 404 });
     }
 
-    // `?view=display` força a visão redigida mesmo com cookie de Mestre válido
-    // (ex.: o Mestre abrindo o link de Exibição no mesmo navegador). Só pode
-    // pedir a visão MAIS restrita — nunca a mais ampla — então não enfraquece
-    // a regra de nunca confiar no cliente para identidade. Ver
-    // `.claude/rules/table-concept.md` seção 3.
     const forcedDisplay = new URL(request.url).searchParams.get('view') === 'display';
-    const isMaster = forcedDisplay ? false : await getCurrentMaster(tableCode, table.id);
+    const isMaster = !forcedDisplay;
 
     const characterRows = await db
       .select()
@@ -130,19 +113,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
   }
 }
 
-// Apaga a Mesa e tudo que pertence a ela (personagens). Só o Mestre pode.
-// Sem `ON DELETE CASCADE` no schema (ver `db/schema/`), então a ordem de
-// exclusão respeita as foreign keys — personagens antes da Mesa — dentro de
-// uma única transação.
+// Apaga a Mesa e tudo que pertence a ela (personagens). Sem `ON DELETE
+// CASCADE` no schema (ver `db/schema/`), então a ordem de exclusão respeita
+// as foreign keys — personagens antes da Mesa — dentro de uma única
+// transação.
 export async function DELETE(_request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
     const tableCode = code.toUpperCase();
 
-    const { table, isMaster } = await resolveTableAndMaster(tableCode);
+    const [table] = await db.select({ id: tables.id }).from(tables).where(eq(tables.code, tableCode));
 
     if (!table) return tableNotFound();
-    if (!isMaster) return unauthorized();
 
     await db.transaction(async (tx) => {
       await tx.delete(characters).where(eq(characters.table_id, table.id));

@@ -11,16 +11,18 @@ import { getTableService, GET_TABLE_KEY, GetTableServiceResponse } from '../serv
 // fetch do snapshot (`GET /api/tables/[code]`, via TanStack Query).
 //
 // `data.you.is_master` deixa a UI decidir o que renderizar, mas o TIPO de
-// `data.characters` já vem certo do backend (ICharacterMaster[] para o Mestre,
-// ICharacterDisplay[] para a Exibição) — o servidor já filtrou os números, a
-// UI nunca precisa "esconder" nada.
+// `data.characters` já vem certo do backend (ICharacterMaster[] para a Tela
+// do Mestre, ICharacterDisplay[] para a Tela de Exibição) — o servidor já
+// filtrou os números, a UI nunca precisa "esconder" nada. Não há mais
+// checagem de "é o Mestre" (app de uso pessoal, qualquer um com o link pode
+// gerenciar a mesa) — a única distinção que resta é de PRIVACIDADE, não de
+// autenticação: `?view=display` sempre pede o formato redigido (sem HP),
+// nunca o formato completo.
 //
 // `forceDisplay: true` (só a Tela de Exibição passa isso) manda `?view=display`
-// para a API, que devolve o formato redigido MESMO que o navegador tenha um
-// cookie de Mestre válido (ex.: o próprio Mestre abrindo o link de Exibição no
-// mesmo navegador onde já autenticou). O parâmetro só pode pedir a visão MAIS
-// restrita — nunca a mais ampla — então não enfraquece "nunca confiar no
-// cliente" (ver `.claude/rules/table-concept.md` seção 3).
+// para a API, que devolve o formato redigido — mesmo se a mesma aba já
+// estiver acessando a Tela do Mestre. O parâmetro só pode pedir a visão MAIS
+// restrita — nunca a mais ampla (ver `.claude/rules/table-concept.md` seção 3).
 //
 // `onCharacterAction` é opcional — quem quiser animar dano/cura em tempo real
 // (Tela de Exibição, próxima etapa) passa esse callback; quem não passar

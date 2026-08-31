@@ -1,6 +1,5 @@
 import { db } from '@/libs/db';
 import { tables, characters } from '@/db/schema';
-import { getCurrentMaster } from '@/libs/tableAuth';
 import { publish } from '@/libs/realtime';
 import type { ICharacterMaster } from '@/resources/character/models/Character';
 import type { ICharacterAttributes } from '@/resources/character/models/RulesContent';
@@ -47,8 +46,8 @@ function sanitizeStatusEffects(value: unknown): EStatusEffect[] {
   return value.filter((entry): entry is EStatusEffect => typeof entry === 'string' && validValues.includes(entry));
 }
 
-// Cria um personagem na Mesa. Só o Mestre pode — sem cookie de Mestre válido,
-// nega a mutação sem tocar no banco (ver `.claude/rules/table-concept.md` seção 3).
+// Cria um personagem na Mesa. App de uso pessoal — sem checagem de Mestre
+// (ver `.claude/rules/table-concept.md`).
 export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await params;
@@ -58,12 +57,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
 
     if (!table) {
       return NextResponse.json({ success: false, message: { 'pt-br': 'Mesa não encontrada.', 'es-mx': 'Mesa no encontrada.', 'en-us': 'Table not found.' }, data: null }, { status: 404 });
-    }
-
-    const isMaster = await getCurrentMaster(tableCode, table.id);
-
-    if (!isMaster) {
-      return NextResponse.json({ success: false, message: { 'pt-br': 'Apenas o Mestre pode fazer isso.', 'es-mx': 'Solo el Máster puede hacer esto.', 'en-us': 'Only the Master can do this.' }, data: null }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
