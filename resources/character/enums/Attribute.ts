@@ -30,3 +30,15 @@ export const ATTRIBUTE_LABEL: Record<EAttribute, string> = {
   [EAttribute.SABEDORIA]: 'Sabedoria',
   [EAttribute.SORTE]: 'Sorte',
 };
+
+// Abreviação de 3 letras — usada em espaços pequenos (verso da carta), onde o
+// nome completo não cabe.
+export const ATTRIBUTE_ABBR: Record<EAttribute, string> = {
+  [EAttribute.FORCA]: 'FOR',
+  [EAttribute.DESTREZA]: 'DES',
+  [EAttribute.CONSTITUICAO]: 'CON',
+  [EAttribute.CARISMA]: 'CAR',
+  [EAttribute.INTELIGENCIA]: 'INT',
+  [EAttribute.SABEDORIA]: 'SAB',
+  [EAttribute.SORTE]: 'SOR',
+};

@@ -274,6 +274,14 @@ export function CharacterWizard({
               </button>
             ))}
           </div>
+
+          <button
+            type="button"
+            className="wiz-back"
+            onClick={() => setStep('species')}
+          >
+            Voltar
+          </button>
         </>
       ) : null}
 
@@ -322,23 +330,34 @@ export function CharacterWizard({
                   >
                     <span className="wiz-radio-dot" />
 
-                    {option.label}
+                    {`${option.label}: ${option.description}`}
                   </button>
                 ))}
               </div>
             </>
           ) : null}
 
-          <Button
-            variant="primary"
-            className="wiz-continue"
-            disabled={!classChoicesValid()}
-            onClick={() => setStep('origin')}
-          >
-            Continuar
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              className="wiz-back"
+              onClick={() => setStep('class')}
+            >
+              Voltar
+            </button>
 
-            <ArrowRight weight="bold" />
-          </Button>
+            <Button
+              variant="primary"
+              className="wiz-continue"
+              style={{ marginLeft: 'auto' }}
+              disabled={!classChoicesValid()}
+              onClick={() => setStep('origin')}
+            >
+              Continuar
+
+              <ArrowRight weight="bold" />
+            </Button>
+          </div>
         </>
       ) : null}
 
@@ -364,6 +383,14 @@ export function CharacterWizard({
               </button>
             ))}
           </div>
+
+          <button
+            type="button"
+            className="wiz-back"
+            onClick={() => setStep(selectedClass && classHasChoices(selectedClass) ? 'classChoices' : 'class')}
+          >
+            Voltar
+          </button>
         </>
       ) : null}
 
@@ -415,16 +442,27 @@ export function CharacterWizard({
             </>
           ) : null}
 
-          <Button
-            variant="primary"
-            className="wiz-continue"
-            disabled={!originValid()}
-            onClick={() => setStep('review')}
-          >
-            Continuar
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              className="wiz-back"
+              onClick={() => setOriginId(null)}
+            >
+              Voltar
+            </button>
 
-            <ArrowRight weight="bold" />
-          </Button>
+            <Button
+              variant="primary"
+              className="wiz-continue"
+              style={{ marginLeft: 'auto' }}
+              disabled={!originValid()}
+              onClick={() => setStep('review')}
+            >
+              Continuar
+
+              <ArrowRight weight="bold" />
+            </Button>
+          </div>
         </>
       ) : null}
 
@@ -484,16 +522,27 @@ export function CharacterWizard({
             ))}
           </div>
 
-          <Button
-            variant="primary"
-            className="wiz-continue"
-            disabled={!name.trim() || createMutation.isPending}
-            onClick={() => createMutation.mutate()}
-          >
-            <Check weight="bold" />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button
+              type="button"
+              className="wiz-back"
+              onClick={() => setStep('origin')}
+            >
+              Voltar
+            </button>
 
-            Criar Personagem
-          </Button>
+            <Button
+              variant="primary"
+              className="wiz-continue"
+              style={{ marginLeft: 'auto' }}
+              disabled={!name.trim() || createMutation.isPending}
+              onClick={() => createMutation.mutate()}
+            >
+              <Check weight="bold" />
+
+              Criar Personagem
+            </Button>
+          </div>
         </>
       ) : null}
     </Modal>

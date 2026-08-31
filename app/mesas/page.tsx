@@ -162,6 +162,7 @@ export default function MesasPage() {
       <Modal
         open={!!confirmDeleteCode}
         onClose={() => setConfirmDeleteCode(null)}
+        fullscreen
       >
         <p className="card-modal-title">
           <Trash weight="bold" />

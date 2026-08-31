@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Sword, Heart, ShieldPlus, Sparkle, PencilSimple, Skull } from '@phosphor-icons/react';
+import { Sword, Heart, ShieldPlus, Sparkle, PencilSimple, Skull, Radioactive } from '@phosphor-icons/react';
 import type { ICharacterMaster } from '../models/Character';
 import { healthColor, healthPercent } from '../models/HealthColor';
-import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL } from '../enums/Attribute';
+import { ATTRIBUTE_ORDER, ATTRIBUTE_LABEL, ATTRIBUTE_ABBR } from '../enums/Attribute';
 import { EStatusEffect } from '../enums/StatusEffect';
 import { STATUS_EFFECT_VISUAL } from '../models/StatusEffectVisual';
 import { ManaCrystals } from './ManaCrystals';
 import { StatusEffectBadge } from './StatusEffectBadge';
 import { IconButton } from '@/components/vilgard/IconButton';
 import { Switch } from '@/components/vilgard/Switch';
+import type { IExtraResource } from '../models/RulesContent';
 
 export interface CharacterCardFx {
   type: 'damage' | 'heal' | 'mana-gain' | 'mana-loss';
@@ -20,6 +21,10 @@ export interface CharacterCardFx {
 export interface CharacterCardProps {
   character: ICharacterMaster;
   fx: CharacterCardFx | null;
+  // Recursos da classe do personagem (ex: "2d6 Dano curto") — mostrados como
+  // abas ao lado da carta quando ela está virada e em hover. Vazio/ausente
+  // simplesmente não mostra nada (personagem sem classe, ex: NPC).
+  classResources?: IExtraResource[];
   onManaClick: (value: number) => void;
   onOpenDano: () => void;
   onOpenCura: () => void;
@@ -33,6 +38,7 @@ export interface CharacterCardProps {
 export function CharacterCard({
   character: c,
   fx,
+  classResources = [],
   onManaClick,
   onOpenDano,
   onOpenCura,
@@ -55,6 +61,7 @@ export function CharacterCard({
   const fxClass = fx ? `fx-${fx.type}` : '';
 
   return (
+    <>
     <div className="rpg-flip-viewport">
       <div className={`rpg-flip-inner ${flipped ? 'flipped' : ''}`}>
         {/* FRENTE */}
@@ -90,12 +97,28 @@ export function CharacterCard({
             </div>
           ) : null}
           {conditionClass(EStatusEffect.ENVENENADO) ? (
-            <div className="toxic-gas">
-              <span className="gas-blob g1" />
-              <span className="gas-blob g2" />
-              <span className="gas-blob g3" />
-              <span className="gas-blob g4" />
-            </div>
+            <>
+              <div className="toxic-gas">
+                <span className="gas-blob g1" />
+                <span className="gas-blob g2" />
+                <span className="gas-blob g3" />
+                <span className="gas-blob g4" />
+              </div>
+
+              <div className="toxic-icons">
+                <Skull
+                  weight="fill"
+                  size="1em"
+                  className="gi gi1"
+                />
+
+                <Radioactive
+                  weight="fill"
+                  size="1em"
+                  className="gi gi2"
+                />
+              </div>
+            </>
           ) : null}
           {conditionClass(EStatusEffect.DORMINDO) ? (
             <div className="zzz-fx">
@@ -188,7 +211,7 @@ export function CharacterCard({
         <div
           className="rpg-face rpg-face-back"
           style={{ borderColor: hpColor, boxShadow: `0 0 14px ${hpColor}66` }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={() => setFlipped(false)}
         >
           <div className="rpg-back-head">
             <span className="rpg-back-name">
@@ -202,7 +225,7 @@ export function CharacterCard({
             <IconButton
               className="edit-btn"
               icon={<PencilSimple weight="bold" />}
-              onClick={onOpenEdit}
+              onClick={(e) => { e.stopPropagation(); onOpenEdit(); }}
               title="Editar personagem"
             />
           </div>
@@ -247,6 +270,10 @@ export function CharacterCard({
                 className="attr-cell"
                 title={ATTRIBUTE_LABEL[attribute]}
               >
+                <span className="al">
+                  {ATTRIBUTE_ABBR[attribute]}
+                </span>
+
                 <span className="av">
                   {c.attributes![attribute]}
                 </span>
@@ -316,28 +343,40 @@ export function CharacterCard({
               </button>
             </div>
 
-            <Switch
-              checked={c.visible}
-              onChange={onToggleVisible}
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <Switch
+                checked={c.visible}
+                onChange={onToggleVisible}
+              />
+            </div>
 
             <IconButton
               icon="🗑"
-              onClick={onRemove}
+              onClick={(e) => { e.stopPropagation(); onRemove(); }}
               title="Remover"
             />
           </div>
-
-          <button
-            type="button"
-            className="wiz-back"
-            onClick={() => setFlipped(false)}
-            style={{ marginTop: 'auto' }}
-          >
-            Virar
-          </button>
         </div>
       </div>
     </div>
+
+    {classResources.length > 0 ? (
+      <div className="class-tabs">
+        {classResources.map((resource) => (
+          <div
+            key={resource.label}
+            className="class-tab"
+            title={resource.label}
+          >
+            <Sparkle weight="fill" />
+
+            <span>
+              {resource.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    ) : null}
+    </>
   );
 }

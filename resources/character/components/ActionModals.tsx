@@ -75,6 +75,8 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
       <Modal
         open={open === 'dano'}
         onClose={onClose}
+        fullscreen
+        accentColor="#a83f4a"
       >
         <p className="card-modal-title">
           <Sword weight="fill" />
@@ -110,6 +112,8 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
       <Modal
         open={open === 'cura'}
         onClose={onClose}
+        fullscreen
+        accentColor="#7a9b5c"
       >
         <p className="card-modal-title">
           <Heart weight="fill" />
@@ -145,6 +149,8 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
       <Modal
         open={open === 'vida-extra'}
         onClose={onClose}
+        fullscreen
+        accentColor="#c9a227"
       >
         <p className="card-modal-title">
           <ShieldPlus weight="fill" />
@@ -192,6 +198,8 @@ export function ActionModals({ code, character, open, onClose, onApplied }: Acti
       <Modal
         open={open === 'estado'}
         onClose={onClose}
+        fullscreen
+        accentColor="#b592ae"
       >
         <p className="card-modal-title">
           <Sparkle weight="fill" />

@@ -1,5 +1,6 @@
 'use client';
 
+import { Skull, Radioactive } from '@phosphor-icons/react';
 import { EStatusEffect } from '../enums/StatusEffect';
 import { ManaCrystals } from './ManaCrystals';
 import { StatusEffectBadge } from './StatusEffectBadge';
@@ -37,6 +38,45 @@ export function DisplayCard({ character: c }: { character: ICharacterDisplay }) 
           <span className="blood-drip bd5" />
         </div>
       ) : null}
+      {conditionClass(EStatusEffect.ATORDOADO) ? (
+        <div className="stun-orbit">
+          <span className="stun-star s1">✦</span>
+          <span className="stun-star s2">✧</span>
+          <span className="stun-star s3">✦</span>
+        </div>
+      ) : null}
+      {conditionClass(EStatusEffect.ENVENENADO) ? (
+        <>
+          <div className="toxic-gas">
+            <span className="gas-blob g1" />
+            <span className="gas-blob g2" />
+            <span className="gas-blob g3" />
+            <span className="gas-blob g4" />
+          </div>
+
+          <div className="toxic-icons">
+            <Skull
+              weight="fill"
+              size="1em"
+              className="gi gi1"
+            />
+
+            <Radioactive
+              weight="fill"
+              size="1em"
+              className="gi gi2"
+            />
+          </div>
+        </>
+      ) : null}
+      {conditionClass(EStatusEffect.DORMINDO) ? (
+        <div className="zzz-fx">
+          <span className="zzz z1">Zzz</span>
+          <span className="zzz z2">Zz</span>
+          <span className="zzz z3">Zzz</span>
+        </div>
+      ) : null}
+      {conditionClass(EStatusEffect.ENFEITICADO) ? <div className="enchant-fx" /> : null}
 
       <span className={`type-tag rpg-type-badge type-${c.type}`}>
         {c.type}
